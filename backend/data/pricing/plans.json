@@ -1,0 +1,10 @@
+{
+  "cursor": ["Hobby", "Pro", "Business", "Enterprise"],
+  "github_copilot": ["Individual", "Business", "Enterprise"],
+  "claude": ["Free", "Pro", "Max", "Team", "Enterprise", "API direct"],
+  "chatgpt": ["Plus", "Team", "Enterprise", "API direct"],
+  "anthropic_api": ["API direct"],
+  "openai_api": ["API direct"],
+  "gemini": ["Pro", "Ultra", "API"],
+  "windsurf": ["Free", "Pro", "Team", "Enterprise"]
+}

@@ -1,0 +1,10 @@
+[
+  { "id": "cursor", "name": "Cursor" },
+  { "id": "github_copilot", "name": "GitHub Copilot" },
+  { "id": "claude", "name": "Claude" },
+  { "id": "chatgpt", "name": "ChatGPT" },
+  { "id": "anthropic_api", "name": "Anthropic API" },
+  { "id": "openai_api", "name": "OpenAI API" },
+  { "id": "gemini", "name": "Gemini" },
+  { "id": "windsurf", "name": "Windsurf" }
+]
