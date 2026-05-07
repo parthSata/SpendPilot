@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AuditPage } from "@/components/features/audit/AuditPage";
+import { AuditPage } from "@/components";
 
 export const Route = createFileRoute("/audit")({
   head: () => ({

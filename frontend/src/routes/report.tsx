@@ -1,9 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Sparkles, TrendingDown, ArrowRight, Twitter, Linkedin } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { AuroraBackground } from "@/components/site/Background";
-import { AnimatedCounter } from "@/components/site/AnimatedCounter";
+import { Button, AuroraBackground, AnimatedCounter } from "@/components";
 
 export const Route = createFileRoute("/report")({
   head: () => ({

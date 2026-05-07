@@ -3,9 +3,7 @@ import {
   Outlet,
   createRootRouteWithContext,
 } from "@tanstack/react-router";
-import { RootDocumentShell } from "@/components/layout/RootDocumentShell";
-import { AppProviders } from "@/components/providers/AppProviders";
-import { RouteErrorState, RouteNotFound } from "@/components/layout/RouteFallbacks";
+import { RootDocumentShell, AppProviders, RouteErrorState, RouteNotFound } from "@/components";
 import { useRootQueryClient } from "@/hooks/useRootQueryClient";
 
 import appCss from "../styles.css?url";
