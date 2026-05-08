@@ -10,18 +10,13 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResultsRouteImport } from './routes/results'
-import { Route as ReportRouteImport } from './routes/report'
 import { Route as AuditRouteImport } from './routes/audit'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ReportShareIdRouteImport } from './routes/report.$shareId'
 
 const ResultsRoute = ResultsRouteImport.update({
   id: '/results',
   path: '/results',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReportRoute = ReportRouteImport.update({
-  id: '/report',
-  path: '/report',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuditRoute = AuditRouteImport.update({
@@ -34,38 +29,42 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReportShareIdRoute = ReportShareIdRouteImport.update({
+  id: '/$shareId',
+  path: '/$shareId',
+  getParentRoute: () => ReportRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/audit': typeof AuditRoute
-  '/report': typeof ReportRoute
   '/results': typeof ResultsRoute
+  '/report/$shareId': typeof ReportShareIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/audit': typeof AuditRoute
-  '/report': typeof ReportRoute
   '/results': typeof ResultsRoute
+  '/report/$shareId': typeof ReportShareIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/audit': typeof AuditRoute
-  '/report': typeof ReportRoute
   '/results': typeof ResultsRoute
+  '/report/$shareId': typeof ReportShareIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/audit' | '/report' | '/results'
+  fullPaths: '/' | '/audit' | '/results' | '/report/$shareId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/audit' | '/report' | '/results'
-  id: '__root__' | '/' | '/audit' | '/report' | '/results'
+  to: '/' | '/audit' | '/results' | '/report/$shareId'
+  id: '__root__' | '/' | '/audit' | '/results' | '/report/$shareId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuditRoute: typeof AuditRoute
-  ReportRoute: typeof ReportRoute
   ResultsRoute: typeof ResultsRoute
 }
 
@@ -76,13 +75,6 @@ declare module '@tanstack/react-router' {
       path: '/results'
       fullPath: '/results'
       preLoaderRoute: typeof ResultsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/report': {
-      id: '/report'
-      path: '/report'
-      fullPath: '/report'
-      preLoaderRoute: typeof ReportRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/audit': {
@@ -99,13 +91,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/report/$shareId': {
+      id: '/report/$shareId'
+      path: '/$shareId'
+      fullPath: '/report/$shareId'
+      preLoaderRoute: typeof ReportShareIdRouteImport
+      parentRoute: typeof ReportRoute
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuditRoute: AuditRoute,
-  ReportRoute: ReportRoute,
   ResultsRoute: ResultsRoute,
 }
 export const routeTree = rootRouteImport

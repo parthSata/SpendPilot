@@ -1,5 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { AI_TOOLS } from "@/lib/tools";
+import { runAuditApi } from "@/lib/audit-api";
 
 export type SelectedTools = Record<string, number>;
 
@@ -18,6 +20,8 @@ export function useAuditFlow() {
   const [selected, setSelected] = useState<SelectedTools>({ chatgpt: 20, cursor: 20 });
   const [teamSize, setTeamSize] = useState(8);
   const [useCase, setUseCase] = useState("engineering");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const total = useMemo(() => {
     const selectedTotal = Object.values(selected).reduce((sum, price) => sum + price, 0);
@@ -27,12 +31,50 @@ export function useAuditFlow() {
 
   const estSavings = useMemo(() => Math.round(total * 0.38), [total]);
 
-  const next = () => {
+  const next = async () => {
     if (step < AUDIT_STEPS.length - 1) {
       setStep((prev) => prev + 1);
       return;
     }
-    void navigate({ to: "/results" });
+
+    try {
+      setIsSubmitting(true);
+      setSubmitError("");
+
+      const toolsPayload = Object.entries(selected).map(([toolId, monthlySpend]) => {
+        const tool = AI_TOOLS.find((item) => item.id === toolId);
+        return {
+          toolName: tool?.name || toolId,
+          currentPlan: "Pro",
+          monthlySpend,
+          seats: Math.max(1, teamSize),
+        };
+      });
+
+      const mappedUseCase =
+        useCase === "engineering"
+          ? "coding"
+          : useCase === "product"
+            ? "writing"
+            : useCase === "api"
+              ? "data"
+              : "mixed";
+
+      const response = await runAuditApi({
+        teamSize,
+        primaryUseCase: mappedUseCase,
+        tools: toolsPayload,
+      });
+
+      void navigate({
+        to: "/results",
+        search: { shareId: response.data.shareId },
+      });
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Unable to run audit.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const prev = () => {
@@ -55,5 +97,7 @@ export function useAuditFlow() {
     setUseCase,
     next,
     prev,
+    isSubmitting,
+    submitError,
   };
 }

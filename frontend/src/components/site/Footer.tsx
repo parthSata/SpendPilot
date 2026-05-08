@@ -4,11 +4,11 @@ import { Sparkles, Github, Twitter, Linkedin } from "lucide-react";
 export function Footer() {
   return (
     <footer className="relative mt-32 border-t border-white/5">
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--violet)]/40 to-transparent" />
+      <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-(--violet)/40 to-transparent" />
       <div className="mx-auto max-w-7xl px-6 py-16 grid gap-10 md:grid-cols-4">
         <div className="md:col-span-2">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[var(--electric)] to-[var(--violet)] grid place-items-center">
+            <div className="h-8 w-8 rounded-lg bg-linear-to-br from-electric to-violet grid place-items-center">
               <Sparkles className="h-4 w-4 text-white" />
             </div>
             <span className="font-display text-lg font-semibold">
@@ -31,7 +31,6 @@ export function Footer() {
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li><Link to="/audit" className="hover:text-foreground transition">Run audit</Link></li>
             <li><Link to="/results" className="hover:text-foreground transition">Sample results</Link></li>
-            <li><Link to="/report" className="hover:text-foreground transition">Public report</Link></li>
           </ul>
         </div>
         <div>

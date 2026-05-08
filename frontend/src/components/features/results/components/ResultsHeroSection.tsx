@@ -5,9 +5,10 @@ import { AnimatedCounter } from "@/components/site/AnimatedCounter";
 type ResultsHeroSectionProps = {
   monthly: number;
   yearly: number;
+  reductionPct: number;
 };
 
-export function ResultsHeroSection({ monthly, yearly }: ResultsHeroSectionProps) {
+export function ResultsHeroSection({ monthly, yearly, reductionPct }: ResultsHeroSectionProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -27,7 +28,7 @@ export function ResultsHeroSection({ monthly, yearly }: ResultsHeroSectionProps)
         <div className="mt-2 text-xl text-muted-foreground">per month</div>
         <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-(--success)/10 border border-(--success)/20 text-success text-sm">
           <TrendingDown className="h-4 w-4" />
-          That's <span className="font-bold">${yearly.toLocaleString()}</span> per year - a 38% reduction
+          That's <span className="font-bold">${yearly.toLocaleString()}</span> per year - a {reductionPct}% reduction
         </div>
       </div>
     </motion.div>

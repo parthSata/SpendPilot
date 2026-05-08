@@ -46,7 +46,7 @@ export function ResultsChartsSection({ trend, tools }: ResultsChartsSectionProps
         <ResponsiveContainer width="100%" height={240}>
           <BarChart data={tools} barCategoryGap={12}>
             <CartesianGrid stroke="rgba(255,255,255,0.05)" />
-            <XAxis dataKey="name" stroke="rgba(255,255,255,0.4)" fontSize={10} />
+            <XAxis dataKey="toolName" stroke="rgba(255,255,255,0.4)" fontSize={10} />
             <YAxis stroke="rgba(255,255,255,0.4)" fontSize={11} />
             <Tooltip contentStyle={{ background: "rgba(20,20,40,0.9)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12 }} />
             <Bar dataKey="current" fill="oklch(0.7 0.22 260)" radius={[6, 6, 0, 0]} />

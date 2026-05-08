@@ -5,6 +5,7 @@
 export { Button } from "@/components/ui/button";
 export { Input } from "@/components/ui/input";
 export { Slider } from "@/components/ui/slider";
+export { Label } from "@/components/ui/label";
 
 // Site
 export { Navbar } from "@/components/site/Navbar";

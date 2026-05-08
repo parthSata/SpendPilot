@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { getSharedAuditApi, sendAuditEmailApi, type SharedAuditResponse } from "@/lib/audit-api";
 
 export type SpendTrendPoint = {
   m: string;
@@ -7,43 +8,128 @@ export type SpendTrendPoint = {
 };
 
 export type ToolRecommendation = {
-  name: string;
+  toolName: string;
   current: number;
   recommended: number;
-  action: string;
+  monthlySpend: number;
+  recommendedPlan: string;
+  monthlySavings: number;
+  reason: string;
   severity: "high" | "medium" | "low";
 };
 
-const SHARE_URL = "https://spendpilot.app/r/abc123";
-
-export function useResultsPage() {
+export function useResultsPage(shareId?: string) {
   const [copied, setCopied] = useState(false);
   const [leadOpen, setLeadOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [emailStatus, setEmailStatus] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [audit, setAudit] = useState<SharedAuditResponse | null>(null);
 
-  const monthly = 1840;
-  const yearly = monthly * 12;
+  useEffect(() => {
+    if (!shareId) {
+      setError("Missing report id. Run audit first.");
+      setLoading(false);
+      return;
+    }
 
-  const trend: SpendTrendPoint[] = [
-    { m: "Jan", current: 4800, optimized: 4800 },
-    { m: "Feb", current: 5100, optimized: 4200 },
-    { m: "Mar", current: 5400, optimized: 3900 },
-    { m: "Apr", current: 5800, optimized: 3700 },
-    { m: "May", current: 6100, optimized: 3500 },
-    { m: "Jun", current: 6500, optimized: 3400 },
-  ];
+    let mounted = true;
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const response = await getSharedAuditApi(shareId);
+        if (mounted) {
+          setAudit(response.data);
+        }
+      } catch (err) {
+        if (mounted) {
+          setError(err instanceof Error ? err.message : "Unable to load audit.");
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
 
-  const tools: ToolRecommendation[] = [
-    { name: "OpenAI API", current: 2200, recommended: 1100, action: "Switch to gpt-4o-mini for 80% of calls", severity: "high" },
-    { name: "Cursor Pro", current: 320, recommended: 240, action: "Drop 4 inactive seats", severity: "medium" },
-    { name: "ChatGPT Team", current: 600, recommended: 480, action: "Move 6 users to free tier", severity: "medium" },
-    { name: "GitHub Copilot", current: 380, recommended: 380, action: "Keep - high utilization", severity: "low" },
-    { name: "Claude Pro", current: 200, recommended: 80, action: "Consolidate to 4 power users", severity: "high" },
-  ];
+    void load();
+    return () => {
+      mounted = false;
+    };
+  }, [shareId]);
+
+  const monthly = audit?.totalMonthlySavings ?? 0;
+  const yearly = audit?.totalAnnualSavings ?? 0;
+  const totalSpend = audit?.totalMonthlySpend ?? 0;
+  const reductionPct = totalSpend ? Math.round((monthly / totalSpend) * 100) : 0;
+
+  const tools: ToolRecommendation[] = useMemo(
+    () =>
+      (audit?.tools ?? []).map((tool) => ({
+        toolName: tool.toolName,
+        current: tool.monthlySpend,
+        recommended: Math.max(0, tool.monthlySpend - tool.monthlySavings),
+        monthlySpend: tool.monthlySpend,
+        recommendedPlan: tool.recommendedPlan,
+        monthlySavings: tool.monthlySavings,
+        reason: tool.reason,
+        severity:
+          tool.monthlySavings >= 200
+            ? "high"
+            : tool.monthlySavings >= 80
+              ? "medium"
+              : "low",
+      })),
+    [audit]
+  );
+
+  const trend: SpendTrendPoint[] = useMemo(() => {
+    const baseline = totalSpend;
+    const optimized = Math.max(0, totalSpend - monthly);
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
+    return months.map((m, i) => {
+      const slope = 1 + i * 0.06;
+      return {
+        m,
+        current: Math.round(baseline * slope),
+        optimized: Math.round(optimized * slope),
+      };
+    });
+  }, [monthly, totalSpend]);
+
+  const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:8080";
+  const shareUrl = shareId ? `${origin}/report/${encodeURIComponent(shareId)}` : "";
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(SHARE_URL);
+    if (!shareUrl) return;
+    await navigator.clipboard.writeText(shareUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSendEmail = async () => {
+    if (!audit?.auditId) {
+      setEmailStatus("Audit data missing.");
+      return;
+    }
+    if (!email) {
+      setEmailStatus("Please enter an email.");
+      return;
+    }
+
+    try {
+      setSendingEmail(true);
+      setEmailStatus("");
+      await sendAuditEmailApi({ auditId: audit.auditId, email });
+      setEmailStatus("Report emailed successfully.");
+    } catch (err) {
+      setEmailStatus(err instanceof Error ? err.message : "Unable to send email.");
+    } finally {
+      setSendingEmail(false);
+    }
   };
 
   return {
@@ -51,10 +137,20 @@ export function useResultsPage() {
     leadOpen,
     monthly,
     yearly,
+    reductionPct,
     trend,
     tools,
-    shareUrl: SHARE_URL,
+    shareUrl,
+    shareId: shareId || "",
+    aiSummary: audit?.aiSummary || "",
+    loading,
+    error,
+    email,
+    emailStatus,
+    sendingEmail,
     setLeadOpen,
+    setEmail,
     handleCopy,
+    handleSendEmail,
   };
 }

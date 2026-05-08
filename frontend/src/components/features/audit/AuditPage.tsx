@@ -25,6 +25,8 @@ export function AuditPage() {
     setUseCase,
     next,
     prev,
+    isSubmitting,
+    submitError,
   } = useAuditFlow();
 
   return (
@@ -81,10 +83,12 @@ export function AuditPage() {
               <Button variant="ghost" onClick={prev} disabled={step === 0}>
                 <ArrowLeft className="h-4 w-4" /> Back
               </Button>
-              <Button variant="hero" onClick={next} size="lg">
-                {step === 3 ? "See my savings" : "Continue"} <ArrowRight className="h-4 w-4" />
+              <Button variant="hero" onClick={() => void next()} size="lg" disabled={isSubmitting}>
+                {step === 3 ? (isSubmitting ? "Generating report..." : "See my savings") : "Continue"}{" "}
+                <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
+            {submitError ? <p className="mt-3 text-sm text-destructive">{submitError}</p> : null}
           </div>
 
           <div className="lg:sticky lg:top-28 self-start space-y-4">

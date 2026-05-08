@@ -8,18 +8,32 @@ import { ResultsChartsSection } from "@/components/features/results/components/R
 import { ToolRecommendationsSection } from "@/components/features/results/components/ToolRecommendationsSection";
 import { ResultsCtaSection } from "@/components/features/results/components/ResultsCtaSection";
 
-export function ResultsPage() {
+type ResultsPageProps = {
+  shareId?: string;
+};
+
+export function ResultsPage({ shareId }: ResultsPageProps) {
   const {
     copied,
     leadOpen,
     monthly,
     yearly,
+    reductionPct,
     trend,
     tools,
     shareUrl,
+    aiSummary,
+    loading,
+    error,
+    email,
+    emailStatus,
+    sendingEmail,
+    setEmail,
+    handleSendEmail,
+    shareId: resolvedShareId,
     setLeadOpen,
     handleCopy,
-  } = useResultsPage();
+  } = useResultsPage(shareId);
 
   return (
     <div className="relative min-h-screen">
@@ -29,16 +43,30 @@ export function ResultsPage() {
 
       <div className="pt-32 pb-16 px-6">
         <div className="mx-auto max-w-6xl">
-          <ResultsHeroSection monthly={monthly} yearly={yearly} />
-          <AiSummarySection />
-          <ResultsChartsSection trend={trend} tools={tools} />
-          <ToolRecommendationsSection tools={tools} />
-          <ResultsCtaSection
-            copied={copied}
-            shareUrl={shareUrl}
-            onCopy={() => void handleCopy()}
-            onOpenLeadModal={() => setLeadOpen(true)}
-          />
+          {loading ? (
+            <div className="glass-strong rounded-2xl p-8 text-center text-muted-foreground">Loading results...</div>
+          ) : error ? (
+            <div className="glass-strong rounded-2xl p-8 text-center text-destructive">{error}</div>
+          ) : (
+            <>
+              <ResultsHeroSection monthly={monthly} yearly={yearly} reductionPct={reductionPct} />
+              <AiSummarySection summary={aiSummary} />
+              <ResultsChartsSection trend={trend} tools={tools} />
+              <ToolRecommendationsSection tools={tools} />
+              <ResultsCtaSection
+                copied={copied}
+                shareUrl={shareUrl}
+                shareId={resolvedShareId}
+                email={email}
+                emailStatus={emailStatus}
+                sendingEmail={sendingEmail}
+                onCopy={() => void handleCopy()}
+                onEmailChange={setEmail}
+                onSendEmail={() => void handleSendEmail()}
+                onOpenLeadModal={() => setLeadOpen(true)}
+              />
+            </>
+          )}
         </div>
       </div>
     </div>

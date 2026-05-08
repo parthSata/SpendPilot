@@ -14,7 +14,6 @@ export function Navbar() {
     { to: "/", label: "Home" },
     { to: "/audit", label: "Audit" },
     { to: "/results", label: "Results" },
-    { to: "/report", label: "Public Report" },
   ];
 
   return (
@@ -34,8 +33,8 @@ export function Navbar() {
         >
           <Link to="/" className="flex items-center gap-2 group">
             <div className="relative">
-              <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-[var(--electric)] to-[var(--violet)] blur-md opacity-70 group-hover:opacity-100 transition" />
-              <div className="relative h-8 w-8 rounded-lg bg-gradient-to-br from-[var(--electric)] to-[var(--violet)] grid place-items-center">
+              <div className="absolute inset-0 rounded-lg bg-linear-to-br from-electric to-violet blur-md opacity-70 group-hover:opacity-100 transition" />
+              <div className="relative h-8 w-8 rounded-lg bg-linear-to-br from-electric to-violet grid place-items-center">
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
             </div>
@@ -58,9 +57,6 @@ export function Navbar() {
           </nav>
 
           <div className="hidden md:flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/audit">Sign in</Link>
-            </Button>
             <Button asChild variant="hero" size="sm">
               <Link to="/audit">Start Free Audit</Link>
             </Button>

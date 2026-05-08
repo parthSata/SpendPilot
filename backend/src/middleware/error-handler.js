@@ -1,11 +1,11 @@
-import { ApiError } from "../utils/api-error.js";
+import { ApiError } from "../utils/ApiError.js";
 
 export const errorHandler = (error, _req, res, _next) => {
   if (error instanceof ApiError) {
     return res.status(error.statusCode).json({
       ok: false,
       message: error.message,
-      details: error.details
+      details: error.errors
     });
   }
 
