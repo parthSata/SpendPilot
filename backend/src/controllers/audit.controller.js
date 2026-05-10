@@ -2,7 +2,13 @@ import { z } from "zod";
 import { ApiError } from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { getSharedAudit, runAudit, sendAuditEmail } from "../services/audit.service.js";
+import { bookConsultation, getSharedAudit, runAudit, sendAuditEmail } from "../services/audit.service.js";
+
+const leadSchema = z.object({
+  email: z.string().email(),
+  companyName: z.string().min(1),
+  role: z.string().optional(),
+});
 
 const toolInputSchema = z.object({
   toolName: z.string().min(1),
@@ -66,4 +72,14 @@ export const sendAuditEmailController = asyncHandler(async (req, res) => {
   }
 
   return res.status(200).json(new ApiResponse(200, {}, "Audit email sent"));
+});
+
+export const bookConsultationController = asyncHandler(async (req, res) => {
+  const parsed = leadSchema.safeParse(req.body);
+  if (!parsed.success) {
+    throw new ApiError(400, "Invalid consultation payload", parsed.error.issues);
+  }
+
+  await bookConsultation(parsed.data);
+  return res.status(200).json(new ApiResponse(200, {}, "Consultation booked successfully"));
 });

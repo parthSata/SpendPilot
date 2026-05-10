@@ -92,3 +92,13 @@ export const sendAuditEmailApi = (payload: { auditId: string; email: string }) =
     method: "POST",
     body: JSON.stringify(payload),
   });
+
+export const bookConsultationApi = (payload: {
+  email: string;
+  companyName: string;
+  role?: string;
+}) =>
+  request<{}>("/audit/consultation", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
