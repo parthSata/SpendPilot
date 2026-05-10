@@ -1,10 +1,10 @@
 import { readFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { Resend } from "resend";
 import { AuditModel } from "../models/audit.model.js";
 import { LeadModel } from "../models/lead.model.js";
 import { SharedReportModel } from "../models/shared-report.model.js";
+import { sendEmail } from "../utils/sendEmail.js";
 import { env } from "../config/env.js";
 
 const toolsPath = new URL("../../data/pricing/tools.json", import.meta.url);
@@ -31,6 +31,12 @@ const planTargets = {
   Max: 100,
   "API direct": 180,
   API: 180,
+  "Core": 25,
+  "Core+": 35,
+  "Teams": 45,
+  "Standard": 30,
+  "Mega": 120,
+  "Workspace": 10,
 };
 
 const parsePricingCatalog = async () => {
@@ -39,9 +45,13 @@ const parsePricingCatalog = async () => {
     readFile(plansPath, "utf8"),
   ]);
 
+  const toolsData = JSON.parse(toolsRaw);
+  const plansData = JSON.parse(plansRaw);
+
   return {
-    tools: JSON.parse(toolsRaw),
-    plans: JSON.parse(plansRaw),
+    tools: toolsData.tools || toolsData,
+    plans: plansData,
+    lastUpdated: toolsData.lastUpdated || new Date().toISOString(),
   };
 };
 
@@ -53,8 +63,16 @@ const mapToolId = (toolName, toolsCatalog) => {
   return match?.id ?? normalized.replace(/\s+/g, "_");
 };
 
+const findToolInfo = (toolName, toolsCatalog) => {
+  const normalized = toolName.trim().toLowerCase();
+  return toolsCatalog.find(
+    (tool) => tool.id.toLowerCase() === normalized || tool.name.toLowerCase() === normalized
+  );
+};
+
 const calculateToolRecommendation = (item, plansCatalog, toolsCatalog, useCaseFactor) => {
   const toolId = mapToolId(item.toolName, toolsCatalog);
+  const toolInfo = findToolInfo(item.toolName, toolsCatalog);
   const knownPlans = plansCatalog[toolId] ?? ["Pro", "Business", "API direct"];
   const sortedPlans = [...knownPlans].sort(
     (a, b) => (planTargets[a] ?? 9999) - (planTargets[b] ?? 9999)
@@ -66,11 +84,11 @@ const calculateToolRecommendation = (item, plansCatalog, toolsCatalog, useCaseFa
   const currentPlanBudget = planTargets[item.currentPlan] ?? adjustedSpend / seats;
 
   const recommendedPlan =
-    sortedPlans.find((plan) => (planTargets[plan] ?? Infinity) >= spendPerSeat * 0.8) ??
-    sortedPlans[sortedPlans.length - 1];
+    sortedPlans.find((plan) => (planTargets[plan] ?? Infinity) >= spendPerSeat * 0.5) ??
+    sortedPlans[0];
 
   const targetPerSeat = planTargets[recommendedPlan] ?? currentPlanBudget;
-  const recommendedMonthly = Math.max(0, Math.round(targetPerSeat * seats));
+  const recommendedMonthly = Math.round(targetPerSeat * seats);
   const monthlySavings = Math.max(0, Math.round(item.monthlySpend - recommendedMonthly));
   const annualSavings = monthlySavings * 12;
 
@@ -89,6 +107,8 @@ const calculateToolRecommendation = (item, plansCatalog, toolsCatalog, useCaseFa
     monthlySavings,
     annualSavings,
     reason,
+    source: toolInfo?.source || "Pricing Data",
+    sourceUrl: toolInfo?.sourceUrl || "",
   };
 };
 
@@ -103,7 +123,7 @@ const buildFallbackSummary = ({ totalMonthlySavings, totalAnnualSavings, primary
     ? `Top opportunities: ${topItems.join(", ")}.`
     : "Current stack is already optimized with low immediate savings opportunities.";
 
-  return `For a ${primaryUseCase} focused team, estimated savings are ${totalMonthlySavings}/mo (${totalAnnualSavings}/yr). ${topLine}`;
+  return `For a ${primaryUseCase} focused team, estimated savings are $${totalMonthlySavings}/mo ($${totalAnnualSavings}/yr). ${topLine}`;
 };
 
 const buildGeminiSummary = async (payload) => {
@@ -132,7 +152,7 @@ Rules:
 };
 
 export const runAudit = async ({ teamSize, primaryUseCase, tools, lead }) => {
-  const { tools: toolsCatalog, plans: plansCatalog } = await parsePricingCatalog();
+  const { tools: toolsCatalog, plans: plansCatalog, lastUpdated } = await parsePricingCatalog();
   const useCaseFactor = useCaseFactors[primaryUseCase] ?? 1;
 
   const recommendations = tools.map((item) =>
@@ -168,6 +188,7 @@ export const runAudit = async ({ teamSize, primaryUseCase, tools, lead }) => {
     auditScore,
     isHighSavingsLead: totalMonthlySavings >= 1000,
     publicShareId: shareId,
+    pricingLastUpdated: lastUpdated,
   });
 
   await SharedReportModel.create({
@@ -200,6 +221,7 @@ export const runAudit = async ({ teamSize, primaryUseCase, tools, lead }) => {
     auditScore,
     aiSummary,
     tools: recommendations,
+    pricingLastUpdated: lastUpdated,
   };
 };
 
@@ -228,35 +250,147 @@ export const getSharedAudit = async (shareId) => {
     auditScore: audit.auditScore,
     aiSummary: audit.aiSummary,
     tools: audit.tools,
+    pricingLastUpdated: audit.pricingLastUpdated,
   };
 };
 
 export const sendAuditEmail = async ({ auditId, toEmail }) => {
   const audit = await AuditModel.findById(auditId).lean();
   if (!audit) return { sent: false, reason: "Audit not found" };
-  if (!env.RESEND_API_KEY || !env.RESEND_FROM_EMAIL) {
-    return { sent: false, reason: "Email provider not configured" };
+  if (!env.GMAIL_CLIENT_ID || !env.GMAIL_CLIENT_SECRET || !env.GMAIL_REFRESH_TOKEN || !env.EMAIL_USER) {
+    return { sent: false, reason: "Gmail provider not configured" };
   }
 
-  const resend = new Resend(env.RESEND_API_KEY);
   const topOpportunities = [...audit.tools]
     .sort((a, b) => b.monthlySavings - a.monthlySavings)
     .slice(0, 3)
-    .map((item) => `<li><strong>${item.toolName}</strong>: save $${item.monthlySavings}/mo (${item.recommendedPlan})</li>`)
+    .map((item) => `
+      <tr>
+        <td style="padding: 12px; border-bottom: 1px solid #eee;">
+          <strong style="color: #000;">${item.toolName}</strong>
+          <div style="font-size: 13px; color: #666; margin-top: 4px;">Recommended: ${item.recommendedPlan}</div>
+        </td>
+        <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;">
+          <div style="font-size: 18px; font-weight: bold; color: #10b981;">$${item.monthlySavings}</div>
+          <div style="font-size: 12px; color: #666;">per month</div>
+        </td>
+      </tr>
+    `)
     .join("");
 
-  await resend.emails.send({
-    from: env.RESEND_FROM_EMAIL,
-    to: toEmail,
-    subject: "Your SpendPilot audit summary",
-    html: `
-      <h2>Your AI spend audit is ready</h2>
-      <p>Estimated savings: <strong>$${audit.totalMonthlySavings}/mo</strong> ($${audit.totalAnnualSavings}/yr)</p>
-      <p>${audit.aiSummary}</p>
-      <ul>${topOpportunities}</ul>
-      <p>Public report: ${env.FRONTEND_ORIGIN.split(",")[0].trim()}/report/${audit.publicShareId}</p>
-    `,
-  });
+  const reportLink = `${env.FRONTEND_ORIGIN.split(",")[0].trim()}/report/${audit.publicShareId}`;
+
+  const emailSubject = "🎯 Your SpendPilot Audit Summary - Save $" + audit.totalMonthlySavings + "/month";
+  
+  const emailBody = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f7fa;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+        
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 40px 30px; text-align: center; color: #ffffff;">
+          <h1 style="margin: 0; font-size: 32px; font-weight: 700;">SpendPilot</h1>
+          <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.95;">Your AI Spend Audit Results</p>
+        </div>
+
+        <!-- Main Content -->
+        <div style="padding: 40px 30px;">
+          
+          <!-- Greeting -->
+          <h2 style="margin: 0 0 10px 0; color: #111827; font-size: 24px; font-weight: 600;">You can save</h2>
+          
+          <!-- Big Savings Card -->
+          <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 12px; padding: 30px; margin: 20px 0; text-align: center; color: #ffffff;">
+            <div style="font-size: 14px; opacity: 0.95; margin-bottom: 10px;">Monthly Savings</div>
+            <div style="font-size: 48px; font-weight: 700; margin-bottom: 5px;">$${audit.totalMonthlySavings}</div>
+            <div style="font-size: 14px; opacity: 0.95;">or <strong>$${audit.totalAnnualSavings}/year</strong></div>
+          </div>
+
+          <!-- Summary -->
+          <div style="background-color: #f3f4f6; border-left: 4px solid #6366f1; border-radius: 8px; padding: 20px; margin: 25px 0;">
+            <div style="color: #111827; line-height: 1.6;">
+              ${audit.aiSummary}
+            </div>
+          </div>
+
+          <!-- Top Opportunities Section -->
+          <h3 style="margin: 30px 0 15px 0; color: #111827; font-size: 18px; font-weight: 600;">Top Opportunities</h3>
+          <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tbody>
+                ${topOpportunities}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Stats Row -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 30px 0;">
+            <div style="background-color: #f3f4f6; border-radius: 8px; padding: 20px; text-align: center;">
+              <div style="font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Current Spend</div>
+              <div style="font-size: 24px; font-weight: 700; color: #111827;">$${audit.totalMonthlySpend}</div>
+              <div style="font-size: 12px; color: #666; margin-top: 4px;">per month</div>
+            </div>
+            <div style="background-color: #f3f4f6; border-radius: 8px; padding: 20px; text-align: center;">
+              <div style="font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Audit Score</div>
+              <div style="font-size: 24px; font-weight: 700; color: #6366f1;">${audit.auditScore}%</div>
+              <div style="font-size: 12px; color: #666; margin-top: 4px;">optimization potential</div>
+            </div>
+          </div>
+
+          <!-- CTA Button -->
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${reportLink}" style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; transition: transform 0.2s;">View Full Report</a>
+          </div>
+
+          <!-- Team Info -->
+          <div style="background-color: #f9fafb; border-radius: 8px; padding: 15px; margin: 20px 0; font-size: 13px; color: #666;">
+            <strong style="color: #111827;">Audit Details:</strong>
+            <div style="margin-top: 8px;">Team Size: ${audit.teamSize} • Focus: ${audit.primaryUseCase}</div>
+          </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color: #f9fafb; border-top: 1px solid #e5e7eb; padding: 30px; text-align: center; color: #666; font-size: 13px;">
+          <p style="margin: 0 0 10px 0;">
+            Questions? <a href="mailto:${env.EMAIL_USER}" style="color: #6366f1; text-decoration: none;">Get in touch</a>
+          </p>
+          <p style="margin: 0; opacity: 0.8;">
+            This is an automated message. Please do not reply to this email.
+          </p>
+          <p style="margin: 10px 0 0 0; opacity: 0.6; font-size: 12px;">
+            © 2026 SpendPilot. All rights reserved.
+          </p>
+        </div>
+
+      </div>
+    </body>
+    </html>
+  `;
+
+  const sent = await sendEmail(toEmail, emailSubject, emailBody);
+
+  if (!sent) {
+    return { sent: false, reason: "Failed to send email via Gmail" };
+  }
+
+  console.log("Email sent successfully to:", toEmail);
+
+  // Capture lead after successful email send
+  await LeadModel.findOneAndUpdate(
+    { email: toEmail.toLowerCase().trim() },
+    {
+      email: toEmail.toLowerCase().trim(),
+      auditId: audit._id,
+      teamSize: audit.teamSize,
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
 
   return { sent: true };
 };

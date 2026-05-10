@@ -41,13 +41,14 @@ export function useAuditFlow() {
       setIsSubmitting(true);
       setSubmitError("");
 
+      const multiplier = useCase === "api" ? 1 : teamSize / 2;
       const toolsPayload = Object.entries(selected).map(([toolId, monthlySpend]) => {
         const tool = AI_TOOLS.find((item) => item.id === toolId);
         return {
-          toolName: tool?.name || toolId,
+          toolName: toolId,
           currentPlan: "Pro",
-          monthlySpend,
-          seats: Math.max(1, teamSize),
+          monthlySpend: Math.round(monthlySpend * multiplier),
+          seats: Math.max(1, useCase === "api" ? 1 : Math.round(teamSize / 2)),
         };
       });
 

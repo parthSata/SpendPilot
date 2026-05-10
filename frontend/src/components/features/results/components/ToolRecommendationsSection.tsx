@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ExternalLink } from "lucide-react";
 import type { ToolRecommendation } from "@/hooks/useResultsPage";
 
 type ToolRecommendationsSectionProps = {
@@ -20,7 +20,7 @@ export function ToolRecommendationsSection({ tools }: ToolRecommendationsSection
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.05 }}
-              className="glass-strong rounded-2xl p-5 md:p-6 grid md:grid-cols-[1fr_auto_auto] gap-4 items-center hover:bg-white/[0.07] transition"
+              className="glass-strong rounded-2xl p-5 md:p-6 grid md:grid-cols-[1fr_auto_auto_auto] gap-4 items-center hover:bg-white/[0.07] transition"
             >
               <div>
                 <div className="font-semibold">{tool.toolName}</div>
@@ -34,6 +34,20 @@ export function ToolRecommendationsSection({ tools }: ToolRecommendationsSection
               <div className={`text-right font-bold ${sevColor}`}>
                 {tool.monthlySavings > 0 ? <>-${tool.monthlySavings}/mo</> : <span className="text-xs uppercase tracking-wider">Keep</span>}
               </div>
+              {tool.sourceUrl ? (
+                <a
+                  href={tool.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-cyan hover:text-cyan/80 transition"
+                  title={`Pricing source: ${tool.source}`}
+                >
+                  <span>{tool.source}</span>
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              ) : (
+                <span className="text-xs text-muted-foreground">{tool.source || "Pricing Data"}</span>
+              )}
             </motion.div>
           );
         })}

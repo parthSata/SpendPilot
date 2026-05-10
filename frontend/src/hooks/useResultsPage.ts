@@ -16,6 +16,8 @@ export type ToolRecommendation = {
   monthlySavings: number;
   reason: string;
   severity: "high" | "medium" | "low";
+  source?: string;
+  sourceUrl?: string;
 };
 
 export function useResultsPage(shareId?: string) {
@@ -76,6 +78,8 @@ export function useResultsPage(shareId?: string) {
         recommendedPlan: tool.recommendedPlan,
         monthlySavings: tool.monthlySavings,
         reason: tool.reason,
+        source: tool.source,
+        sourceUrl: tool.sourceUrl,
         severity:
           tool.monthlySavings >= 200
             ? "high"
@@ -143,6 +147,7 @@ export function useResultsPage(shareId?: string) {
     shareUrl,
     shareId: shareId || "",
     aiSummary: audit?.aiSummary || "",
+    pricingLastUpdated: audit?.pricingLastUpdated,
     loading,
     error,
     email,

@@ -9,7 +9,9 @@ const toolSchema = new mongoose.Schema({
   recommendedTool: String,
   monthlySavings: Number,
   annualSavings: Number,
-  reason: String
+  reason: String,
+  source: String,
+  sourceUrl: String
 });
 
 const auditSchema = new mongoose.Schema(
@@ -40,6 +42,10 @@ const auditSchema = new mongoose.Schema(
     publicShareId: {
       type: String,
       unique: true
+    },
+    pricingLastUpdated: {
+      type: String,
+      default: () => new Date().toISOString()
     }
   },
   { timestamps: true }

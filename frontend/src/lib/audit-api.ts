@@ -50,6 +50,7 @@ export type RunAuditResponse = {
   totalAnnualSavings: number;
   auditScore: number;
   aiSummary: string;
+  pricingLastUpdated?: string;
   tools: Array<{
     toolName: string;
     currentPlan: string;
@@ -60,6 +61,8 @@ export type RunAuditResponse = {
     monthlySavings: number;
     annualSavings: number;
     reason: string;
+    source?: string;
+    sourceUrl?: string;
   }>;
 };
 

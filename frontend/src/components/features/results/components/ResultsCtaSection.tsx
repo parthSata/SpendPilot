@@ -60,6 +60,9 @@ export function ResultsCtaSection({
         <p className="mt-1 text-sm text-muted-foreground">
           Send a dynamic report summary to your inbox/team.
         </p>
+        <p className="mt-2 text-[10px] uppercase tracking-wider text-cyan/60 font-semibold">
+          Sandbox Mode: Emails only send to vimalsata737@gmail.com
+        </p>
         <div className="mt-4 space-y-2">
           <Input
             type="email"
@@ -67,7 +70,11 @@ export function ResultsCtaSection({
             value={email}
             onChange={(e) => onEmailChange(e.target.value)}
           />
-          {emailStatus ? <p className="text-xs text-muted-foreground">{emailStatus}</p> : null}
+          {emailStatus ? (
+            <p className={`text-xs ${emailStatus.toLowerCase().includes("success") ? "text-success" : "text-destructive"}`}>
+              {emailStatus}
+            </p>
+          ) : null}
         </div>
         <div className="mt-4 flex gap-2">
           <Button variant="hero" onClick={onSendEmail} disabled={sendingEmail}>

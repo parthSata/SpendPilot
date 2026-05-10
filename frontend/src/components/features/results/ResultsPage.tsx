@@ -1,3 +1,5 @@
+import { Link } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/site/Navbar";
 import { AuroraBackground } from "@/components/site/Background";
 import { LeadModal } from "@/components/site/LeadModal";
@@ -23,6 +25,7 @@ export function ResultsPage({ shareId }: ResultsPageProps) {
     tools,
     shareUrl,
     aiSummary,
+    pricingLastUpdated,
     loading,
     error,
     email,
@@ -44,15 +47,42 @@ export function ResultsPage({ shareId }: ResultsPageProps) {
       <div className="pt-32 pb-16 px-6">
         <div className="mx-auto max-w-6xl">
           {loading ? (
-            <div className="glass-strong rounded-2xl p-8 text-center text-muted-foreground">Loading results...</div>
+            <div className="glass-strong rounded-3xl p-20 text-center">
+              <div className="flex flex-col items-center gap-4">
+                <div className="h-12 w-12 rounded-full border-2 border-t-electric animate-spin" />
+                <div className="text-xl font-medium text-muted-foreground">Analyzing your spend...</div>
+              </div>
+            </div>
           ) : error ? (
-            <div className="glass-strong rounded-2xl p-8 text-center text-destructive">{error}</div>
+            <div className="glass-strong rounded-3xl p-16 text-center">
+              <div className="max-w-md mx-auto">
+                <div className="h-16 w-16 bg-destructive/10 rounded-full grid place-items-center mx-auto mb-6">
+                  <span className="text-3xl">⚠️</span>
+                </div>
+                <h2 className="text-2xl font-bold mb-3">{error.includes("Missing") ? "No Report Found" : "Audit Error"}</h2>
+                <p className="text-muted-foreground mb-8">
+                  {error.includes("Missing")
+                    ? "We couldn't find an audit report associated with this link. You might need to run a new audit first."
+                    : error}
+                </p>
+                <Button variant="hero" asChild>
+                  <Link to="/audit">Run New Audit</Link>
+                </Button>
+              </div>
+            </div>
           ) : (
             <>
               <ResultsHeroSection monthly={monthly} yearly={yearly} reductionPct={reductionPct} />
               <AiSummarySection summary={aiSummary} />
               <ResultsChartsSection trend={trend} tools={tools} />
               <ToolRecommendationsSection tools={tools} />
+              
+              {pricingLastUpdated && (
+                <div className="mt-8 text-center text-xs text-muted-foreground">
+                  <span>Pricing data last updated: {new Date(pricingLastUpdated).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                </div>
+              )}
+
               <ResultsCtaSection
                 copied={copied}
                 shareUrl={shareUrl}

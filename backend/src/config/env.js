@@ -16,8 +16,10 @@ const envSchema = z.object({
   ANTHROPIC_API_KEY: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_MODEL: z.string().default("gemini-1.5-flash"),
-  RESEND_API_KEY: z.string().optional(),
-  RESEND_FROM_EMAIL: z.string().optional()
+  GMAIL_CLIENT_ID: z.string().optional(),
+  GMAIL_CLIENT_SECRET: z.string().optional(),
+  GMAIL_REFRESH_TOKEN: z.string().optional(),
+  EMAIL_USER: z.string().optional()
 });
 
 const parsed = envSchema.safeParse(process.env);

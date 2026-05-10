@@ -16,7 +16,7 @@ const sendEmail = async (email, subject, message) => {
     const oAuth2Client = new google.auth.OAuth2(
       CLIENT_ID,
       CLIENT_SECRET,
-      'https://developers.google.com/oauthplayground' // Default redirect URI for playground
+      'https://developers.google.com/oauthplayground'
     );
 
     oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
@@ -26,20 +26,13 @@ const sendEmail = async (email, subject, message) => {
     // Create the email content
     const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
     const messageParts = [
-      `From: MomentX <${SENDER_EMAIL}>`,
+      `From: SpendPilot <${SENDER_EMAIL}>`,
       `To: ${email}`,
       'Content-Type: text/html; charset=utf-8',
       'MIME-Version: 1.0',
       `Subject: ${utf8Subject}`,
       '',
-      `
-        <div style="font-family: sans-serif; padding: 20px; color: #333; background-color: #f9f9f9; border-radius: 10px;">
-          <h2 style="color: #6366f1;">MomentX</h2>
-          <p style="font-size: 16px;">${message}</p>
-          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-          <p style="font-size: 12px; color: #666;">This is an automated message. Please do not reply.</p>
-        </div>
-      `,
+      message,
     ];
     const rawMessage = messageParts.join('\n');
 

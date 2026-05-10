@@ -30,9 +30,9 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportShareIdRoute = ReportShareIdRouteImport.update({
-  id: '/$shareId',
-  path: '/$shareId',
-  getParentRoute: () => ReportRoute,
+  id: '/report/$shareId',
+  path: '/report/$shareId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -66,6 +66,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuditRoute: typeof AuditRoute
   ResultsRoute: typeof ResultsRoute
+  ReportShareIdRoute: typeof ReportShareIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -93,10 +94,10 @@ declare module '@tanstack/react-router' {
     }
     '/report/$shareId': {
       id: '/report/$shareId'
-      path: '/$shareId'
+      path: '/report/$shareId'
       fullPath: '/report/$shareId'
       preLoaderRoute: typeof ReportShareIdRouteImport
-      parentRoute: typeof ReportRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -105,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuditRoute: AuditRoute,
   ResultsRoute: ResultsRoute,
+  ReportShareIdRoute: ReportShareIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

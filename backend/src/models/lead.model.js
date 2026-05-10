@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const leadSchema = new mongoose.Schema(
   {
-    email: { type: String, required: true, trim: true, lowercase: true, index: true },
+    email: { type: String, required: true, trim: true, lowercase: true },
     companyName: { type: String, trim: true },
     role: { type: String, trim: true },
     teamSize: { type: Number, min: 1 },
