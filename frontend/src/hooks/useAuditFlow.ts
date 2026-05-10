@@ -1,9 +1,9 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { AI_TOOLS } from "@/lib/tools";
+import { PRICING_DATA, getPrice, calculateBreakdowns, ToolSelection, getRecommendations, getTotalSavings } from "@/lib/pricing/pricing";
 import { runAuditApi } from "@/lib/audit-api";
 
-export type SelectedTools = Record<string, number>;
+export type SelectedTools = Record<string, string>;
 
 export const AUDIT_STEPS = ["Tools", "Team", "Use case", "Review"] as const;
 
@@ -17,19 +17,28 @@ export const USE_CASES = [
 export function useAuditFlow() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
-  const [selected, setSelected] = useState<SelectedTools>({ chatgpt: 20, cursor: 20 });
+  const [selected, setSelected] = useState<SelectedTools>({ chatgpt: "plus", cursor: "pro" });
   const [teamSize, setTeamSize] = useState(8);
   const [useCase, setUseCase] = useState("engineering");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  const total = useMemo(() => {
-    const selectedTotal = Object.values(selected).reduce((sum, price) => sum + price, 0);
-    const multiplier = useCase === "api" ? 1 : teamSize / 2;
-    return selectedTotal * multiplier;
+  const breakdowns = useMemo(() => {
+    const seats = useCase === "api" ? 1 : Math.max(1, Math.round(teamSize / 2));
+    const selections: ToolSelection[] = Object.entries(selected).map(([toolKey, plan]) => ({
+      toolKey,
+      plan,
+      seats,
+    }));
+    return calculateBreakdowns(selections);
   }, [selected, teamSize, useCase]);
 
-  const estSavings = useMemo(() => Math.round(total * 0.38), [total]);
+  const total = useMemo(() => breakdowns.reduce((sum, b) => sum + b.totalMonthly, 0), [breakdowns]);
+  
+  const estSavings = useMemo(() => {
+    const recommendations = getRecommendations(breakdowns);
+    return getTotalSavings(recommendations);
+  }, [breakdowns]);
 
   const next = async () => {
     if (step < AUDIT_STEPS.length - 1) {
@@ -41,16 +50,12 @@ export function useAuditFlow() {
       setIsSubmitting(true);
       setSubmitError("");
 
-      const multiplier = useCase === "api" ? 1 : teamSize / 2;
-      const toolsPayload = Object.entries(selected).map(([toolId, monthlySpend]) => {
-        const tool = AI_TOOLS.find((item) => item.id === toolId);
-        return {
-          toolName: toolId,
-          currentPlan: "Pro",
-          monthlySpend: Math.round(monthlySpend * multiplier),
-          seats: Math.max(1, useCase === "api" ? 1 : Math.round(teamSize / 2)),
-        };
-      });
+      const toolsPayload = breakdowns.map((b) => ({
+        toolName: PRICING_DATA[b.toolKey as keyof typeof PRICING_DATA]?.label || b.toolKey,
+        currentPlan: b.plan,
+        monthlySpend: b.totalMonthly,
+        seats: b.seats,
+      }));
 
       const mappedUseCase =
         useCase === "engineering"

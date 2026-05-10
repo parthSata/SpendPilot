@@ -1,16 +1,26 @@
 import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Brain, Rocket, Zap } from "lucide-react";
-import { AI_TOOLS } from "@/lib/tools";
+import { PRICING_DATA } from "@/lib/pricing/pricing";
 
-export type FloatingTool = (typeof AI_TOOLS)[number];
+export type FloatingTool = {
+  id: string;
+  label: string;
+  emoji: string;
+  color: string;
+};
 export type LandingStat = { value: number; prefix: string; suffix: string; label: string };
 export type LandingFlowStep = { icon: LucideIcon; title: string; desc: string };
 export type SavingsExample = { team: string; before: number; after: number; tools: string[] };
 export type LandingFaq = { q: string; a: string };
 
 export function useLandingPage() {
-  const tools = AI_TOOLS.slice(0, 8);
+  const tools = Object.entries(PRICING_DATA).slice(0, 8).map(([key, t]) => ({
+    id: key,
+    label: t.label,
+    emoji: t.emoji,
+    color: t.color
+  }));
   const toolPositions = [
     "top-10 left-2 md:left-10",
     "top-24 right-2 md:right-12",

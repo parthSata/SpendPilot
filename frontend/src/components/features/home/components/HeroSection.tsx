@@ -54,7 +54,7 @@ export function HeroSection({ tools, toolPositions }: HeroSectionProps) {
             </Link>
           </Button>
           <Button asChild variant="glass" size="xl">
-            <Link to="/results">See sample report</Link>
+            <Link to="/results" search={{ shareId: "sample" }}>See sample report</Link>
           </Button>
         </motion.div>
         <motion.div
@@ -78,9 +78,9 @@ export function HeroSection({ tools, toolPositions }: HeroSectionProps) {
               className={`absolute ${toolPositions[i]}`}
               style={{ animationDelay: `${i * 0.4}s` }}
             >
-              <div className="h-12 w-12 rounded-xl glass-strong grid place-items-center text-xs font-semibold shadow-card">
-                <span style={{ color: t.color === "#FFFFFF" || t.color === "#000000" ? undefined : t.color }}>
-                  {t.initial}
+              <div className="h-12 w-12 rounded-xl glass-strong grid place-items-center text-xl shadow-card">
+                <span>
+                  {t.emoji}
                 </span>
               </div>
             </motion.div>

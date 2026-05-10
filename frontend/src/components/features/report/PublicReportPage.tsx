@@ -75,9 +75,12 @@ export function PublicReportPage({ shareId }: PublicReportPageProps) {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 + index * 0.06 }}
-                    className="glass-strong rounded-2xl p-5 flex items-center justify-between"
+                    className="glass-strong rounded-2xl p-5 flex items-center gap-4"
                   >
-                    <div>
+                    <div className="h-10 w-10 rounded-lg bg-white/5 grid place-items-center text-xl">
+                      {tool.emoji}
+                    </div>
+                    <div className="flex-1">
                       <span className="font-medium block">{tool.toolName}</span>
                       <span className="text-xs text-muted-foreground">Recommended: {tool.recommendedPlan}</span>
                     </div>
@@ -85,6 +88,8 @@ export function PublicReportPage({ shareId }: PublicReportPageProps) {
                   </motion.div>
                 ))}
               </div>
+
+
 
               <div className="mt-12 glass-strong rounded-2xl p-8 text-center gradient-border">
                 <h3 className="text-2xl font-bold">Find your savings</h3>

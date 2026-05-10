@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/site/Navbar";
 import { AuroraBackground } from "@/components/site/Background";
@@ -9,6 +10,7 @@ import { AiSummarySection } from "@/components/features/results/components/AiSum
 import { ResultsChartsSection } from "@/components/features/results/components/ResultsChartsSection";
 import { ToolRecommendationsSection } from "@/components/features/results/components/ToolRecommendationsSection";
 import { ResultsCtaSection } from "@/components/features/results/components/ResultsCtaSection";
+import useAISummary from "@/hooks/useAISummary";
 
 type ResultsPageProps = {
   shareId?: string;
@@ -37,6 +39,25 @@ export function ResultsPage({ shareId }: ResultsPageProps) {
     setLeadOpen,
     handleCopy,
   } = useResultsPage(shareId);
+
+  const { summary: clientSummary, isLoading: summaryLoading, error: summaryError, generateSummary } = useAISummary();
+
+  useEffect(() => {
+    if (tools && tools.length > 0 && !clientSummary && !summaryLoading && !summaryError) {
+      const totalSpend = tools.reduce((sum, t) => sum + t.monthlySpend, 0);
+      const totalSavings = tools.reduce((sum, t) => sum + t.monthlySavings, 0);
+      const recommendations = tools.map(t => ({
+        toolKey: t.toolName,
+        currentPlan: "Current Plan", // Fallback if not mapped
+        suggestedPlan: t.recommendedPlan,
+        monthlySavings: t.monthlySavings
+      }));
+
+      generateSummary({ totalSpend, totalSavings, recommendations });
+    }
+  }, [tools, clientSummary, summaryLoading, summaryError, generateSummary]);
+
+  const displaySummary = summaryLoading ? "Generating fresh AI summary directly in your browser..." : (clientSummary || aiSummary);
 
   return (
     <div className="relative min-h-screen">
@@ -73,7 +94,7 @@ export function ResultsPage({ shareId }: ResultsPageProps) {
           ) : (
             <>
               <ResultsHeroSection monthly={monthly} yearly={yearly} reductionPct={reductionPct} />
-              <AiSummarySection summary={aiSummary} />
+              <AiSummarySection summary={displaySummary} />
               <ResultsChartsSection trend={trend} tools={tools} />
               <ToolRecommendationsSection tools={tools} />
               

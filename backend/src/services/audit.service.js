@@ -18,25 +18,26 @@ const useCaseFactors = {
   mixed: 1.0,
 };
 
-const planTargets = {
-  Free: 0,
-  Hobby: 0,
-  Individual: 19,
-  Plus: 20,
-  Pro: 20,
-  Team: 35,
-  Business: 39,
-  Enterprise: 55,
-  Ultra: 50,
-  Max: 100,
-  "API direct": 180,
-  API: 180,
-  "Core": 25,
-  "Core+": 35,
-  "Teams": 45,
-  "Standard": 30,
-  "Mega": 120,
-  "Workspace": 10,
+const toolPricing = {
+  cursor: { hobby: 0, pro: 20, business: 40 },
+  chatgpt: { free: 0, plus: 20, team: 30 },
+  claude: { free: 0, pro: 20, max: 100, team: 30 },
+  github_copilot: { free: 0, individual: 10, business: 19, enterprise: 39 },
+  copilot: { free: 0, individual: 10, business: 19, enterprise: 39 }, // fallback
+  gemini: { free: 0, advanced: 20, business: 24 },
+  openai_api: { starter: 50, growth: 200, scale: 500 },
+  anthropic_api: { build: 30, scale: 150 },
+  "api-direct": { "api direct": 150 }
+};
+
+// Fallback for general plan names if tool mapping fails
+const globalPlanFallbacks = {
+  free: 0,
+  plus: 20,
+  pro: 20,
+  team: 30,
+  business: 40,
+  enterprise: 50
 };
 
 const parsePricingCatalog = async () => {
@@ -73,21 +74,28 @@ const findToolInfo = (toolName, toolsCatalog) => {
 const calculateToolRecommendation = (item, plansCatalog, toolsCatalog, useCaseFactor) => {
   const toolId = mapToolId(item.toolName, toolsCatalog);
   const toolInfo = findToolInfo(item.toolName, toolsCatalog);
-  const knownPlans = plansCatalog[toolId] ?? ["Pro", "Business", "API direct"];
+  const pricing = toolPricing[toolId] || globalPlanFallbacks;
+
+  const getPrice = (plan) => {
+    const p = plan.toLowerCase();
+    return pricing[p] ?? globalPlanFallbacks[p] ?? 0;
+  };
+
+  const knownPlans = plansCatalog[toolId] ?? ["Pro", "Business"];
   const sortedPlans = [...knownPlans].sort(
-    (a, b) => (planTargets[a] ?? 9999) - (planTargets[b] ?? 9999)
+    (a, b) => getPrice(a) - getPrice(b)
   );
 
   const seats = Math.max(1, item.seats);
-  const adjustedSpend = item.monthlySpend * useCaseFactor;
-  const spendPerSeat = adjustedSpend / seats;
-  const currentPlanBudget = planTargets[item.currentPlan] ?? adjustedSpend / seats;
+  const spendPerSeat = item.monthlySpend / seats;
+  
+  // Find all plans that are cheaper than the current spend per seat
+  const cheaperPlans = sortedPlans
+    .filter(p => getPrice(p) < spendPerSeat)
+    .sort((a, b) => getPrice(b) - getPrice(a)); // Highest price first to maintain features
 
-  const recommendedPlan =
-    sortedPlans.find((plan) => (planTargets[plan] ?? Infinity) >= spendPerSeat * 0.5) ??
-    sortedPlans[0];
-
-  const targetPerSeat = planTargets[recommendedPlan] ?? currentPlanBudget;
+  const recommendedPlan = cheaperPlans.length > 0 ? cheaperPlans[0] : item.currentPlan;
+  const targetPerSeat = getPrice(recommendedPlan);
   const recommendedMonthly = Math.round(targetPerSeat * seats);
   const monthlySavings = Math.max(0, Math.round(item.monthlySpend - recommendedMonthly));
   const annualSavings = monthlySavings * 12;
@@ -107,6 +115,7 @@ const calculateToolRecommendation = (item, plansCatalog, toolsCatalog, useCaseFa
     monthlySavings,
     annualSavings,
     reason,
+    emoji: toolInfo?.emoji || "🤖",
     source: toolInfo?.source || "Pricing Data",
     sourceUrl: toolInfo?.sourceUrl || "",
   };
@@ -267,8 +276,11 @@ export const sendAuditEmail = async ({ auditId, toEmail }) => {
     .map((item) => `
       <tr>
         <td style="padding: 12px; border-bottom: 1px solid #eee;">
-          <strong style="color: #000;">${item.toolName}</strong>
-          <div style="font-size: 13px; color: #666; margin-top: 4px;">Recommended: ${item.recommendedPlan}</div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 20px;">${item.emoji}</span>
+            <strong style="color: #000;">${item.toolName}</strong>
+          </div>
+          <div style="font-size: 13px; color: #666; margin-top: 4px; margin-left: 28px;">Recommended: ${item.recommendedPlan}</div>
         </td>
         <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;">
           <div style="font-size: 18px; font-weight: bold; color: #10b981;">$${item.monthlySavings}</div>

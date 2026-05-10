@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Navbar } from "@/components/site/Navbar";
 import { AuroraBackground } from "@/components/site/Background";
-import { AI_TOOLS } from "@/lib/tools";
+import { PRICING_DATA } from "@/lib/pricing/pricing";
 import { useAuditFlow, type SelectedTools } from "@/hooks/useAuditFlow";
 
 export function AuditPage() {
@@ -123,14 +123,18 @@ export function AuditPage() {
 }
 
 function ToolsStep({ selected, setSelected }: { selected: SelectedTools; setSelected: (s: SelectedTools) => void }) {
-  const toggle = (id: string, price: number) => {
+  const toggle = (toolKey: string, defaultPlan: string) => {
     const copy = { ...selected };
-    if (copy[id] !== undefined) {
-      delete copy[id];
+    if (copy[toolKey] !== undefined) {
+      delete copy[toolKey];
     } else {
-      copy[id] = price;
+      copy[toolKey] = defaultPlan;
     }
     setSelected(copy);
+  };
+
+  const updatePlan = (toolKey: string, plan: string) => {
+    setSelected({ ...selected, [toolKey]: plan });
   };
 
   return (
@@ -138,13 +142,13 @@ function ToolsStep({ selected, setSelected }: { selected: SelectedTools; setSele
       <h2 className="text-2xl md:text-3xl font-bold">Which AI tools is your team using?</h2>
       <p className="mt-2 text-muted-foreground text-sm">Tap to add. You can adjust monthly cost per tool.</p>
       <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {AI_TOOLS.map((t) => {
-          const active = selected[t.id] !== undefined;
+        {Object.entries(PRICING_DATA).map(([toolKey, t]) => {
+          const active = selected[toolKey] !== undefined;
           return (
             <motion.button
-              key={t.id}
+              key={toolKey}
               whileTap={{ scale: 0.97 }}
-              onClick={() => toggle(t.id, t.defaultPrice)}
+              onClick={() => toggle(toolKey, Object.keys(t.plans)[0] || 'free')}
               className={`relative text-left p-4 rounded-xl border transition ${
                 active
                   ? "border-(--electric)/60 bg-(--electric)/10"
@@ -156,14 +160,14 @@ function ToolsStep({ selected, setSelected }: { selected: SelectedTools; setSele
                   className="h-10 w-10 rounded-lg grid place-items-center text-xs font-semibold"
                   style={{
                     background: `${t.color}33`,
-                    color: t.color === "#FFFFFF" || t.color === "#000000" ? "#fff" : t.color,
+                    color: t.color,
                   }}
                 >
-                  {t.initial}
+                  <span className="text-xl">{t.emoji}</span>
                 </div>
                 <div className="flex-1">
-                  <div className="font-medium text-sm">{t.name}</div>
-                  <div className="text-xs text-muted-foreground">{t.category}</div>
+                  <div className="font-medium text-sm">{t.label}</div>
+                  <div className="text-xs text-muted-foreground">{toolKey}</div>
                 </div>
                 <div
                   className={`h-5 w-5 rounded-full border grid place-items-center transition ${
@@ -179,15 +183,19 @@ function ToolsStep({ selected, setSelected }: { selected: SelectedTools; setSele
                   animate={{ opacity: 1, height: "auto" }}
                   className="mt-3 flex items-center gap-2"
                 >
-                  <span className="text-xs text-muted-foreground">$</span>
-                  <Input
-                    type="number"
-                    value={selected[t.id]}
+                  <span className="text-xs text-muted-foreground">Plan:</span>
+                  <select
+                    value={selected[toolKey]}
                     onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => setSelected({ ...selected, [t.id]: Number(e.target.value) || 0 })}
-                    className="h-8 bg-white/5 border-white/10"
-                  />
-                  <span className="text-xs text-muted-foreground">/mo</span>
+                    onChange={(e) => updatePlan(toolKey, e.target.value)}
+                    className="flex-1 h-8 bg-white/5 border border-white/10 rounded-md text-sm px-2 outline-none focus:border-(--electric)"
+                  >
+                    {Object.entries(t.plans).map(([planName, cost]) => (
+                      <option key={planName} value={planName} className="text-black bg-white">
+                        {planName} {typeof cost === 'number' && cost > 0 ? `($${cost}/mo)` : ''}
+                      </option>
+                    ))}
+                  </select>
                 </motion.div>
               )}
             </motion.button>
@@ -278,9 +286,11 @@ function ReviewStep({
 }) {
   const items = useMemo(
     () =>
-      Object.entries(selected).map(([id, price]) => {
-        const tool = AI_TOOLS.find((t) => t.id === id)!;
-        return { ...tool, price };
+      Object.entries(selected).map(([id, plan]) => {
+        const tool = PRICING_DATA[id as keyof typeof PRICING_DATA]!;
+        const cost = tool.plans[plan as keyof typeof tool.plans] || 0;
+        const price = typeof cost === 'number' ? cost : 0;
+        return { id, name: tool.label, color: tool.color, emoji: tool.emoji, plan, price };
       }),
     [selected],
   );
@@ -296,13 +306,13 @@ function ReviewStep({
               className="h-9 w-9 rounded-lg grid place-items-center text-xs font-semibold"
               style={{
                 background: `${i.color}33`,
-                color: i.color === "#FFFFFF" || i.color === "#000000" ? "#fff" : i.color,
+                color: i.color,
               }}
             >
-              {i.initial}
+              <span className="text-xl">{i.emoji}</span>
             </div>
-            <div className="flex-1 text-sm font-medium">{i.name}</div>
-            <div className="text-sm font-mono">${i.price}/mo</div>
+            <div className="flex-1 text-sm font-medium">{i.name} ({i.plan})</div>
+            <div className="text-sm font-mono">${i.price}/seat</div>
           </div>
         ))}
       </div>

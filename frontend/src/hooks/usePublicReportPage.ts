@@ -3,6 +3,7 @@ import { getSharedAuditApi, type SharedAuditResponse } from "@/lib/audit-api";
 
 export type PublicReportTool = {
   toolName: string;
+  emoji: string;
   monthlySavings: number;
   recommendedPlan: string;
 };
@@ -58,6 +59,7 @@ export function usePublicReportPage(shareId?: string) {
         .slice(0, 4)
         .map((tool) => ({
           toolName: tool.toolName,
+          emoji: (tool as any).emoji || "🤖",
           monthlySavings: tool.monthlySavings,
           recommendedPlan: tool.recommendedPlan,
         })),

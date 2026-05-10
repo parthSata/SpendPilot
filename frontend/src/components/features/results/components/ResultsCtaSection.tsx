@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Share2, Copy, Check, ArrowRight, MessageSquare } from "lucide-react";
+import { Share2, Copy, Check, ArrowRight, MessageSquare, Twitter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -45,13 +45,26 @@ export function ResultsCtaSection({
             {copied ? "Copied" : "Copy"}
           </Button>
         </div>
-        <Link
-          to="/report/$shareId"
-          params={{ shareId }}
-          className="mt-3 inline-block text-xs text-muted-foreground hover:text-foreground"
-        >
-          Preview public page →
-        </Link>
+        <div className="mt-3 flex items-center justify-between">
+          <Link
+            to="/report/$shareId"
+            params={{ shareId }}
+            className="text-xs text-muted-foreground hover:text-foreground"
+          >
+            Preview public page →
+          </Link>
+          <Button
+            size="sm"
+            variant="glass"
+            className="h-7 px-3 text-[10px]"
+            onClick={() => {
+              const text = encodeURIComponent(`We just found potential savings on our AI tool stack using SpendPilot! Check our audit: ${shareUrl}`);
+              window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
+            }}
+          >
+            <Twitter className="h-3 w-3 mr-1" /> Tweet report
+          </Button>
+        </div>
       </div>
 
       <div className="relative overflow-hidden rounded-2xl p-6 gradient-border bg-linear-to-br from-(--violet)/20 to-(--electric)/20">
@@ -60,9 +73,7 @@ export function ResultsCtaSection({
         <p className="mt-1 text-sm text-muted-foreground">
           Send a dynamic report summary to your inbox/team.
         </p>
-        <p className="mt-2 text-[10px] uppercase tracking-wider text-cyan/60 font-semibold">
-          Sandbox Mode: Emails only send to vimalsata737@gmail.com
-        </p>
+
         <div className="mt-4 space-y-2">
           <Input
             type="email"
