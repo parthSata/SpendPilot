@@ -10,18 +10,23 @@ import { errorHandler } from "./middleware/error-handler.js";
 
 export const app = express();
 
+const normalizeOrigin = (value) => value.trim().replace(/\/+$/, "");
+
 app.use(helmet());
 app.use(
   cors({
     origin: (origin, callback) => {
-      const allowedOrigins = env.FRONTEND_ORIGIN.split(",").map((item) => item.trim());
+      const allowedOrigins = env.FRONTEND_ORIGIN.split(",")
+        .map((item) => normalizeOrigin(item))
+        .filter(Boolean);
+      const normalizedOrigin = typeof origin === "string" ? normalizeOrigin(origin) : origin;
       const isLocalDevOrigin =
         env.NODE_ENV === "development" &&
-        typeof origin === "string" &&
-        /^https?:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
+        typeof normalizedOrigin === "string" &&
+        /^https?:\/\/(localhost|127\.0\.0\.1):\d+$/.test(normalizedOrigin);
 
       // Allow non-browser requests (curl/postman) and whitelisted browser origins.
-      if (!origin || allowedOrigins.includes(origin) || isLocalDevOrigin) {
+      if (!origin || allowedOrigins.includes(normalizedOrigin) || isLocalDevOrigin) {
         callback(null, true);
         return;
       }

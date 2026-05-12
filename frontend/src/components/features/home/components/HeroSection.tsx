@@ -9,6 +9,17 @@ type HeroSectionProps = {
   toolPositions: string[];
 };
 
+function faviconDomainForTool(tool: FloatingTool): string {
+  const n = String(tool.label ?? tool.id ?? "").toLowerCase();
+  if (n.includes("cursor")) return "cursor.com";
+  if (n.includes("chatgpt") || n.includes("openai")) return "openai.com";
+  if (n.includes("claude") || n.includes("anthropic")) return "anthropic.com";
+  if (n.includes("github") || n.includes("copilot")) return "github.com";
+  if (n.includes("gemini")) return "gemini.google.com";
+  if (n.includes("windsurf") || n.includes("codeium") || n.includes("v0")) return "codeium.com";
+  return "openai.com";
+}
+
 export function HeroSection({ tools, toolPositions }: HeroSectionProps) {
   return (
     <section className="relative pt-36 pb-24 px-6">
@@ -80,14 +91,7 @@ export function HeroSection({ tools, toolPositions }: HeroSectionProps) {
             >
               <div className="h-12 w-12 rounded-xl glass-strong grid place-items-center p-2 shadow-card">
                 <img
-                  src={`https://www.google.com/s2/favicons?domain=${
-                    t.name.toLowerCase().includes("cursor") ? "cursor.com" :
-                    t.name.toLowerCase().includes("chatgpt") || t.name.toLowerCase().includes("openai") ? "openai.com" :
-                    t.name.toLowerCase().includes("claude") || t.name.toLowerCase().includes("anthropic") ? "anthropic.com" :
-                    t.name.toLowerCase().includes("github") || t.name.toLowerCase().includes("copilot") ? "github.com" :
-                    t.name.toLowerCase().includes("gemini") ? "gemini.google.com" :
-                    t.name.toLowerCase().includes("windsurf") || t.name.toLowerCase().includes("codeium") ? "codeium.com" : "openai.com"
-                  }&sz=128`}
+                  src={`https://www.google.com/s2/favicons?domain=${faviconDomainForTool(t)}&sz=128`}
                   alt=""
                   className="w-full h-full object-contain"
                 />
