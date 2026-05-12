@@ -78,10 +78,19 @@ export function HeroSection({ tools, toolPositions }: HeroSectionProps) {
               className={`absolute ${toolPositions[i]}`}
               style={{ animationDelay: `${i * 0.4}s` }}
             >
-              <div className="h-12 w-12 rounded-xl glass-strong grid place-items-center text-xl shadow-card">
-                <span>
-                  {t.emoji}
-                </span>
+              <div className="h-12 w-12 rounded-xl glass-strong grid place-items-center p-2 shadow-card">
+                <img
+                  src={`https://www.google.com/s2/favicons?domain=${
+                    t.name.toLowerCase().includes("cursor") ? "cursor.com" :
+                    t.name.toLowerCase().includes("chatgpt") || t.name.toLowerCase().includes("openai") ? "openai.com" :
+                    t.name.toLowerCase().includes("claude") || t.name.toLowerCase().includes("anthropic") ? "anthropic.com" :
+                    t.name.toLowerCase().includes("github") || t.name.toLowerCase().includes("copilot") ? "github.com" :
+                    t.name.toLowerCase().includes("gemini") ? "gemini.google.com" :
+                    t.name.toLowerCase().includes("windsurf") || t.name.toLowerCase().includes("codeium") ? "codeium.com" : "openai.com"
+                  }&sz=128`}
+                  alt=""
+                  className="w-full h-full object-contain"
+                />
               </div>
             </motion.div>
           ))}

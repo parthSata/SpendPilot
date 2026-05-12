@@ -18,7 +18,7 @@ app.use(
       const isLocalDevOrigin =
         env.NODE_ENV === "development" &&
         typeof origin === "string" &&
-        /^https?:\/\/localhost:\d+$/.test(origin);
+        /^https?:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
 
       // Allow non-browser requests (curl/postman) and whitelisted browser origins.
       if (!origin || allowedOrigins.includes(origin) || isLocalDevOrigin) {

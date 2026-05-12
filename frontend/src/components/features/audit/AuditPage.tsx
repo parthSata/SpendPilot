@@ -1,14 +1,17 @@
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { useMemo } from "react";
-import { ArrowLeft, ArrowRight, Check, Plus, TrendingDown, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, TrendingDown, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
 import { Navbar } from "@/components/site/Navbar";
 import { AuroraBackground } from "@/components/site/Background";
-import { PRICING_DATA } from "@/lib/pricing/pricing";
-import { useAuditFlow, type SelectedTools } from "@/hooks/useAuditFlow";
+import { useAuditFlow } from "@/hooks/useAuditFlow";
+import { formatPrice } from "@/lib/pricing/pricing";
+
+// Separated Step Components
+import { ToolsStep } from "./components/ToolsStep";
+import { TeamStep } from "./components/TeamStep";
+import { UseCaseStep } from "./components/UseCaseStep";
+import { ReviewStep } from "./components/ReviewStep";
 
 export function AuditPage() {
   const {
@@ -92,19 +95,19 @@ export function AuditPage() {
           </div>
 
           <div className="lg:sticky lg:top-28 self-start space-y-4">
-            <div className="glass-strong rounded-2xl p-6">
-              <div className="text-xs uppercase tracking-wider text-muted-foreground">Estimated monthly spend</div>
-              <div className="mt-2 text-3xl font-bold">${Math.round(total).toLocaleString()}</div>
+            <div className="glass-strong rounded-2xl p-6 overflow-hidden">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground truncate">Estimated monthly spend</div>
+              <div className="mt-2 text-3xl font-bold truncate">{formatPrice(Math.round(total))}</div>
               <div className="mt-4 h-px bg-white/10" />
-              <div className="mt-4 flex items-center gap-2 text-success">
-                <TrendingDown className="h-4 w-4" />
-                <div>
-                  <div className="text-xs uppercase tracking-wider">Potential savings</div>
-                  <div className="text-2xl font-bold">${estSavings.toLocaleString()}/mo</div>
+              <div className="mt-4 flex items-center gap-2 text-success min-w-0">
+                <TrendingDown className="h-4 w-4 shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-xs uppercase tracking-wider truncate">Potential savings</div>
+                  <div className="text-2xl font-bold truncate">{formatPrice(estSavings)}/mo</div>
                 </div>
               </div>
-              <div className="mt-4 text-xs text-muted-foreground">
-                That's <span className="text-foreground font-semibold">${(estSavings * 12).toLocaleString()}</span> per year.
+              <div className="mt-4 text-xs text-muted-foreground truncate">
+                That's <span className="text-foreground font-semibold">{formatPrice(estSavings * 12)}</span> per year.
               </div>
             </div>
 
@@ -116,214 +119,6 @@ export function AuditPage() {
               ← Back to homepage
             </Link>
           </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ToolsStep({ selected, setSelected }: { selected: SelectedTools; setSelected: (s: SelectedTools) => void }) {
-  const toggle = (toolKey: string, defaultPlan: string) => {
-    const copy = { ...selected };
-    if (copy[toolKey] !== undefined) {
-      delete copy[toolKey];
-    } else {
-      copy[toolKey] = defaultPlan;
-    }
-    setSelected(copy);
-  };
-
-  const updatePlan = (toolKey: string, plan: string) => {
-    setSelected({ ...selected, [toolKey]: plan });
-  };
-
-  return (
-    <div>
-      <h2 className="text-2xl md:text-3xl font-bold">Which AI tools is your team using?</h2>
-      <p className="mt-2 text-muted-foreground text-sm">Tap to add. You can adjust monthly cost per tool.</p>
-      <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {Object.entries(PRICING_DATA).map(([toolKey, t]) => {
-          const active = selected[toolKey] !== undefined;
-          return (
-            <motion.button
-              key={toolKey}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => toggle(toolKey, Object.keys(t.plans)[0] || 'free')}
-              className={`relative text-left p-4 rounded-xl border transition ${
-                active
-                  ? "border-(--electric)/60 bg-(--electric)/10"
-                  : "border-white/10 bg-white/5 hover:bg-white/10"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className="h-10 w-10 rounded-lg grid place-items-center text-xs font-semibold"
-                  style={{
-                    background: `${t.color}33`,
-                    color: t.color,
-                  }}
-                >
-                  <span className="text-xl">{t.emoji}</span>
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium text-sm">{t.label}</div>
-                  <div className="text-xs text-muted-foreground">{toolKey}</div>
-                </div>
-                <div
-                  className={`h-5 w-5 rounded-full border grid place-items-center transition ${
-                    active ? "bg-linear-to-br from-electric to-violet border-transparent" : "border-white/20"
-                  }`}
-                >
-                  {active ? <Check className="h-3 w-3 text-white" /> : <Plus className="h-3 w-3 text-muted-foreground" />}
-                </div>
-              </div>
-              {active && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  className="mt-3 flex items-center gap-2"
-                >
-                  <span className="text-xs text-muted-foreground">Plan:</span>
-                  <select
-                    value={selected[toolKey]}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => updatePlan(toolKey, e.target.value)}
-                    className="flex-1 h-8 bg-white/5 border border-white/10 rounded-md text-sm px-2 outline-none focus:border-(--electric)"
-                  >
-                    {Object.entries(t.plans).map(([planName, cost]) => (
-                      <option key={planName} value={planName} className="text-black bg-white">
-                        {planName} {typeof cost === 'number' && cost > 0 ? `($${cost}/mo)` : ''}
-                      </option>
-                    ))}
-                  </select>
-                </motion.div>
-              )}
-            </motion.button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function TeamStep({ teamSize, setTeamSize }: { teamSize: number; setTeamSize: (n: number) => void }) {
-  return (
-    <div>
-      <h2 className="text-2xl md:text-3xl font-bold">How big is your team?</h2>
-      <p className="mt-2 text-muted-foreground text-sm">We'll factor seat-based pricing into your savings.</p>
-      <div className="mt-10 glass rounded-2xl p-8">
-        <div className="text-center">
-          <div className="text-7xl font-bold gradient-text">{teamSize}</div>
-          <div className="mt-1 text-sm text-muted-foreground">{teamSize === 1 ? "person" : "people"}</div>
-        </div>
-        <div className="mt-8">
-          <Slider value={[teamSize]} onValueChange={(v) => setTeamSize(v[0])} min={1} max={100} step={1} />
-          <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-            <span>1</span>
-            <span>25</span>
-            <span>50</span>
-            <span>100+</span>
-          </div>
-        </div>
-        <div className="mt-8 grid grid-cols-4 gap-2">
-          {[1, 5, 15, 50].map((n) => (
-            <button
-              key={n}
-              onClick={() => setTeamSize(n)}
-              className={`py-2 rounded-lg text-sm font-medium transition ${
-                teamSize === n ? "bg-white/10 border border-white/20" : "bg-white/3 border border-white/5 hover:bg-white/5"
-              }`}
-            >
-              {n === 1 ? "Solo" : n}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function UseCaseStep({
-  useCase,
-  useCases,
-  setUseCase,
-}: {
-  useCase: string;
-  useCases: ReadonlyArray<{ id: string; title: string; desc: string }>;
-  setUseCase: (v: string) => void;
-}) {
-  return (
-    <div>
-      <h2 className="text-2xl md:text-3xl font-bold">What's your primary use case?</h2>
-      <p className="mt-2 text-muted-foreground text-sm">Helps us tune recommendations to your workflow.</p>
-      <div className="mt-6 grid sm:grid-cols-2 gap-3">
-        {useCases.map((c) => (
-          <motion.button
-            key={c.id}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setUseCase(c.id)}
-            className={`text-left p-5 rounded-xl border transition ${
-              useCase === c.id ? "border-(--electric)/60 bg-(--electric)/10" : "border-white/10 bg-white/5 hover:bg-white/10"
-            }`}
-          >
-            <div className="font-semibold">{c.title}</div>
-            <div className="mt-1 text-sm text-muted-foreground">{c.desc}</div>
-          </motion.button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ReviewStep({
-  selected,
-  teamSize,
-  useCase,
-}: {
-  selected: SelectedTools;
-  teamSize: number;
-  useCase: string;
-}) {
-  const items = useMemo(
-    () =>
-      Object.entries(selected).map(([id, plan]) => {
-        const tool = PRICING_DATA[id as keyof typeof PRICING_DATA]!;
-        const cost = tool.plans[plan as keyof typeof tool.plans] || 0;
-        const price = typeof cost === 'number' ? cost : 0;
-        return { id, name: tool.label, color: tool.color, emoji: tool.emoji, plan, price };
-      }),
-    [selected],
-  );
-
-  return (
-    <div>
-      <h2 className="text-2xl md:text-3xl font-bold">Quick review</h2>
-      <p className="mt-2 text-muted-foreground text-sm">Confirm and we'll generate your savings report.</p>
-      <div className="mt-6 grid gap-3">
-        {items.map((i) => (
-          <div key={i.id} className="glass rounded-xl p-4 flex items-center gap-3">
-            <div
-              className="h-9 w-9 rounded-lg grid place-items-center text-xs font-semibold"
-              style={{
-                background: `${i.color}33`,
-                color: i.color,
-              }}
-            >
-              <span className="text-xl">{i.emoji}</span>
-            </div>
-            <div className="flex-1 text-sm font-medium">{i.name} ({i.plan})</div>
-            <div className="text-sm font-mono">${i.price}/seat</div>
-          </div>
-        ))}
-      </div>
-      <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
-        <div className="glass rounded-xl p-4">
-          <div className="text-xs text-muted-foreground">Team size</div>
-          <div className="mt-1 font-semibold">{teamSize} people</div>
-        </div>
-        <div className="glass rounded-xl p-4">
-          <div className="text-xs text-muted-foreground">Use case</div>
-          <div className="mt-1 font-semibold capitalize">{useCase}</div>
         </div>
       </div>
     </div>

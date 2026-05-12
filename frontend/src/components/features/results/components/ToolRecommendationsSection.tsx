@@ -13,6 +13,15 @@ export function ToolRecommendationsSection({ tools }: ToolRecommendationsSection
       <div className="mt-6 grid gap-3">
         {tools.map((tool, i) => {
           const sevColor = tool.severity === "high" ? "text-success" : tool.severity === "medium" ? "text-cyan" : "text-muted-foreground";
+          const logoUrl = `https://www.google.com/s2/favicons?domain=${
+            tool.toolName.toLowerCase().includes("cursor") ? "cursor.com" :
+            tool.toolName.toLowerCase().includes("chatgpt") || tool.toolName.toLowerCase().includes("openai") ? "openai.com" :
+            tool.toolName.toLowerCase().includes("claude") || tool.toolName.toLowerCase().includes("anthropic") ? "anthropic.com" :
+            tool.toolName.toLowerCase().includes("github") || tool.toolName.toLowerCase().includes("copilot") ? "github.com" :
+            tool.toolName.toLowerCase().includes("gemini") ? "gemini.google.com" :
+            tool.toolName.toLowerCase().includes("windsurf") || tool.toolName.toLowerCase().includes("codeium") ? "codeium.com" : "openai.com"
+          }&sz=128`;
+          
           return (
             <motion.div
               key={tool.toolName}
@@ -22,9 +31,14 @@ export function ToolRecommendationsSection({ tools }: ToolRecommendationsSection
               transition={{ delay: i * 0.05 }}
               className="glass-strong rounded-2xl p-5 md:p-6 grid md:grid-cols-[1fr_auto_auto_auto] gap-4 items-center hover:bg-white/[0.07] transition"
             >
-              <div>
-                <div className="font-semibold">{tool.toolName}</div>
-                <div className="text-sm text-muted-foreground mt-0.5">{tool.reason}</div>
+              <div className="flex items-center gap-4 min-w-0">
+                <div className="h-10 w-10 rounded-lg p-2 grid place-items-center bg-white/10 shrink-0">
+                  <img src={logoUrl} alt="" className="w-full h-full object-contain" />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-semibold truncate">{tool.toolName}</div>
+                  <div className="text-sm text-muted-foreground mt-0.5 line-clamp-1">{tool.reason}</div>
+                </div>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <span className="text-muted-foreground line-through">${tool.monthlySpend}</span>

@@ -1,14 +1,10 @@
 {
-  "cursor": ["Hobby", "Pro", "Business", "Enterprise"],
-  "copilot": ["Individual", "Business", "Enterprise"],
-  "claude": ["Free", "Pro", "Max", "Team", "Enterprise", "API direct"],
-  "chatgpt": ["Plus", "Team", "Enterprise", "API direct"],
-  "anthropic-api": ["API direct"],
-  "openai-api": ["API direct"],
-  "gemini": ["Pro", "Ultra", "API"],
-  "perplexity": ["Pro", "Enterprise"],
-  "midjourney": ["Standard", "Pro", "Mega"],
-  "v0": ["Pro", "Team"],
-  "replit": ["Core", "Core+", "Teams"],
-  "notion-ai": ["Plus", "Team"]
+  "cursor": ["Hobby", "Pro", "Business"],
+  "github_copilot": ["Free", "Individual", "Business", "Enterprise"],
+  "claude": ["Free", "Pro", "Max", "Team"],
+  "chatgpt": ["Free", "Plus", "Team"],
+  "anthropic_api": ["Build", "Scale"],
+  "openai_api": ["Starter", "Growth", "Scale"],
+  "gemini": ["Free", "Advanced", "Business"],
+  "windsurf": ["Free", "Pro", "Team"]
 }

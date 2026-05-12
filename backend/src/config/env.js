@@ -29,4 +29,18 @@ if (!parsed.success) {
   throw new Error(`Invalid environment variables:\n${issues}`);
 }
 
-export const env = parsed.data;
+const data = parsed.data;
+
+const mongoLooksLocal =
+  /(^|@)(localhost|127\.0\.0\.1)(:|\/|$)/i.test(data.MONGO_URI) ||
+  data.MONGO_URI.startsWith("mongodb://localhost") ||
+  data.MONGO_URI.startsWith("mongodb://127.0.0.1");
+
+if (data.NODE_ENV === "production" && mongoLooksLocal) {
+  throw new Error(
+    "MONGO_URI points at localhost, which has no MongoDB on Render. " +
+      "Use MongoDB Atlas (or another hosted cluster) and set MONGO_URI to that connection string in the Render dashboard."
+  );
+}
+
+export const env = data;

@@ -23,11 +23,77 @@ const toolPricing = {
   chatgpt: { free: 0, plus: 20, team: 30 },
   claude: { free: 0, pro: 20, max: 100, team: 30 },
   github_copilot: { free: 0, individual: 10, business: 19, enterprise: 39 },
-  copilot: { free: 0, individual: 10, business: 19, enterprise: 39 }, // fallback
   gemini: { free: 0, advanced: 20, business: 24 },
   openai_api: { starter: 50, growth: 200, scale: 500 },
   anthropic_api: { build: 30, scale: 150 },
-  "api-direct": { "api direct": 150 }
+  windsurf: { free: 0, pro: 15, team: 30 }
+};
+
+const calculateToolRecommendation = (item, plansCatalog, toolsCatalog, useCaseFactor, totalTeamSize) => {
+  const toolId = mapToolId(item.toolName, toolsCatalog);
+  const toolInfo = findToolInfo(item.toolName, toolsCatalog);
+  const pricing = toolPricing[toolId] || globalPlanFallbacks;
+
+  const getPrice = (plan) => {
+    const p = plan.toLowerCase();
+    return pricing[p] ?? globalPlanFallbacks[p] ?? 0;
+  };
+
+  const currentPricePerSeat = getPrice(item.currentPlan);
+  const seats = Math.max(1, item.seats);
+  const wastedSeats = Math.max(0, seats - totalTeamSize);
+
+  const knownPlans = plansCatalog[toolId] ?? ["Pro", "Business"];
+  const sortedPlans = [...knownPlans].sort(
+    (a, b) => getPrice(a) - getPrice(b)
+  );
+
+  // Find all plans that are cheaper than the current spend per seat
+  const cheaperPlans = sortedPlans
+    .filter(p => getPrice(p) < currentPricePerSeat)
+    .sort((a, b) => getPrice(b) - getPrice(a)); // Highest price first to maintain features
+
+  const recommendedPlan = cheaperPlans.length > 0 ? cheaperPlans[0] : item.currentPlan;
+  const targetPerSeat = getPrice(recommendedPlan);
+
+  let monthlySavings = 0;
+  let reason = "";
+
+  // 1. Savings from wasted seats
+  if (wastedSeats > 0 && currentPricePerSeat > 0) {
+    monthlySavings += wastedSeats * currentPricePerSeat;
+    reason = `You have ${wastedSeats} unused seats compared to your total team size.`;
+  }
+
+  // 2. Savings from plan downgrade (on remaining active seats)
+  const activeSeats = seats - wastedSeats;
+  const planSavings = (currentPricePerSeat - targetPerSeat) * activeSeats;
+  if (planSavings > 0) {
+    monthlySavings += planSavings;
+    reason += (reason ? " Also, d" : "D") + `owngrade to ${recommendedPlan} plan to save $${(currentPricePerSeat - targetPerSeat)}/seat.`;
+  }
+
+  if (monthlySavings === 0) {
+    reason = "Current plan and seat count are already efficient for your team size.";
+  }
+
+  const annualSavings = Math.round(monthlySavings * 12);
+
+  return {
+    toolName: item.toolName,
+    currentPlan: item.currentPlan,
+    monthlySpend: item.monthlySpend,
+    seats,
+    wastedSeats,
+    recommendedPlan,
+    recommendedTool: item.toolName,
+    monthlySavings: Math.round(monthlySavings),
+    annualSavings,
+    reason,
+    emoji: toolInfo?.emoji || "🤖",
+    source: toolInfo?.source || "Pricing Data",
+    sourceUrl: toolInfo?.sourceUrl || "",
+  };
 };
 
 // Fallback for general plan names if tool mapping fails
@@ -69,56 +135,6 @@ const findToolInfo = (toolName, toolsCatalog) => {
   return toolsCatalog.find(
     (tool) => tool.id.toLowerCase() === normalized || tool.name.toLowerCase() === normalized
   );
-};
-
-const calculateToolRecommendation = (item, plansCatalog, toolsCatalog, useCaseFactor) => {
-  const toolId = mapToolId(item.toolName, toolsCatalog);
-  const toolInfo = findToolInfo(item.toolName, toolsCatalog);
-  const pricing = toolPricing[toolId] || globalPlanFallbacks;
-
-  const getPrice = (plan) => {
-    const p = plan.toLowerCase();
-    return pricing[p] ?? globalPlanFallbacks[p] ?? 0;
-  };
-
-  const knownPlans = plansCatalog[toolId] ?? ["Pro", "Business"];
-  const sortedPlans = [...knownPlans].sort(
-    (a, b) => getPrice(a) - getPrice(b)
-  );
-
-  const seats = Math.max(1, item.seats);
-  const spendPerSeat = item.monthlySpend / seats;
-  
-  // Find all plans that are cheaper than the current spend per seat
-  const cheaperPlans = sortedPlans
-    .filter(p => getPrice(p) < spendPerSeat)
-    .sort((a, b) => getPrice(b) - getPrice(a)); // Highest price first to maintain features
-
-  const recommendedPlan = cheaperPlans.length > 0 ? cheaperPlans[0] : item.currentPlan;
-  const targetPerSeat = getPrice(recommendedPlan);
-  const recommendedMonthly = Math.round(targetPerSeat * seats);
-  const monthlySavings = Math.max(0, Math.round(item.monthlySpend - recommendedMonthly));
-  const annualSavings = monthlySavings * 12;
-
-  const reason =
-    monthlySavings > 0
-      ? `Current cost profile suggests ${recommendedPlan} is enough for this workload (${seats} seats).`
-      : "Current plan is already efficient for current team usage.";
-
-  return {
-    toolName: item.toolName,
-    currentPlan: item.currentPlan,
-    monthlySpend: item.monthlySpend,
-    seats,
-    recommendedPlan,
-    recommendedTool: item.toolName,
-    monthlySavings,
-    annualSavings,
-    reason,
-    emoji: toolInfo?.emoji || "🤖",
-    source: toolInfo?.source || "Pricing Data",
-    sourceUrl: toolInfo?.sourceUrl || "",
-  };
 };
 
 const buildFallbackSummary = ({ totalMonthlySavings, totalAnnualSavings, primaryUseCase, recommendations }) => {
@@ -165,7 +181,7 @@ export const runAudit = async ({ teamSize, primaryUseCase, tools, lead }) => {
   const useCaseFactor = useCaseFactors[primaryUseCase] ?? 1;
 
   const recommendations = tools.map((item) =>
-    calculateToolRecommendation(item, plansCatalog, toolsCatalog, useCaseFactor)
+    calculateToolRecommendation(item, plansCatalog, toolsCatalog, useCaseFactor, teamSize)
   );
 
   const totalMonthlySpend = recommendations.reduce((sum, item) => sum + item.monthlySpend, 0);

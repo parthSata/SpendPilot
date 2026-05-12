@@ -1,17 +1,13 @@
 {
-  "lastUpdated": "2026-05-09T00:00:00Z",
+  "lastUpdated": "2026-05-11T00:00:00Z",
   "tools": [
-    { "id": "cursor", "name": "Cursor Pro", "emoji": "⚡", "source": "Official Pricing", "sourceUrl": "https://cursor.com/pricing" },
-    { "id": "copilot", "name": "GitHub Copilot", "emoji": "🐙", "source": "Official Pricing", "sourceUrl": "https://github.com/pricing/copilot" },
-    { "id": "claude", "name": "Claude Pro", "emoji": "🤖", "source": "Official Pricing", "sourceUrl": "https://claude.ai/pricing" },
-    { "id": "chatgpt", "name": "ChatGPT Plus", "emoji": "🧠", "source": "Official Pricing", "sourceUrl": "https://openai.com/pricing" },
-    { "id": "anthropic-api", "name": "Anthropic API", "emoji": "🏗️", "source": "Official Pricing", "sourceUrl": "https://www.anthropic.com/pricing" },
-    { "id": "openai-api", "name": "OpenAI API", "emoji": "⚙️", "source": "Official Pricing", "sourceUrl": "https://openai.com/pricing" },
-    { "id": "gemini", "name": "Gemini Advanced", "emoji": "✨", "source": "Official Pricing", "sourceUrl": "https://gemini.google.com/pricing" },
-    { "id": "perplexity", "name": "Perplexity Pro", "source": "Official Pricing", "sourceUrl": "https://www.perplexity.ai/pricing" },
-    { "id": "midjourney", "name": "Midjourney", "source": "Official Pricing", "sourceUrl": "https://www.midjourney.com/pricing" },
-    { "id": "v0", "name": "v0 by Vercel", "source": "Official Pricing", "sourceUrl": "https://v0.dev/pricing" },
-    { "id": "replit", "name": "Replit Core", "source": "Official Pricing", "sourceUrl": "https://replit.com/pricing" },
-    { "id": "notion-ai", "name": "Notion AI", "source": "Official Pricing", "sourceUrl": "https://www.notion.so/pricing" }
+    { "id": "cursor", "name": "Cursor", "emoji": "⚡", "source": "Official Pricing", "sourceUrl": "https://www.cursor.com/pricing" },
+    { "id": "github_copilot", "name": "GitHub Copilot", "emoji": "🐙", "source": "Official Pricing", "sourceUrl": "https://github.com/features/copilot#pricing" },
+    { "id": "claude", "name": "Claude", "emoji": "🤖", "source": "Official Pricing", "sourceUrl": "https://www.anthropic.com/pricing" },
+    { "id": "chatgpt", "name": "ChatGPT", "emoji": "🧠", "source": "Official Pricing", "sourceUrl": "https://openai.com/chatgpt/pricing/" },
+    { "id": "anthropic_api", "name": "Anthropic API", "emoji": "🏗️", "source": "Official Pricing", "sourceUrl": "https://www.anthropic.com/api" },
+    { "id": "openai_api", "name": "OpenAI API", "emoji": "⚙️", "source": "Official Pricing", "sourceUrl": "https://openai.com/api/pricing/" },
+    { "id": "gemini", "name": "Google Gemini", "emoji": "✨", "source": "Official Pricing", "sourceUrl": "https://gemini.google.com/advanced" },
+    { "id": "windsurf", "name": "Windsurf", "emoji": "🏄", "source": "Official Pricing", "sourceUrl": "https://codeium.com/windsurf/pricing" }
   ]
 }

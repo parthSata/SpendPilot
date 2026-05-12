@@ -3,7 +3,12 @@ import { useMemo, useState } from "react";
 import { PRICING_DATA, getPrice, calculateBreakdowns, ToolSelection, getRecommendations, getTotalSavings } from "@/lib/pricing/pricing";
 import { runAuditApi } from "@/lib/audit-api";
 
-export type SelectedTools = Record<string, string>;
+export interface ToolSelectionState {
+  plan: string;
+  seats: number;
+}
+
+export type SelectedTools = Record<string, ToolSelectionState>;
 
 export const AUDIT_STEPS = ["Tools", "Team", "Use case", "Review"] as const;
 
@@ -17,21 +22,23 @@ export const USE_CASES = [
 export function useAuditFlow() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
-  const [selected, setSelected] = useState<SelectedTools>({ chatgpt: "plus", cursor: "pro" });
-  const [teamSize, setTeamSize] = useState(8);
+  const [selected, setSelected] = useState<SelectedTools>({
+    chatgpt: { plan: "plus", seats: 5 },
+    cursor: { plan: "pro", seats: 5 },
+  });
+  const [teamSize, setTeamSize] = useState(10);
   const [useCase, setUseCase] = useState("engineering");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
   const breakdowns = useMemo(() => {
-    const seats = useCase === "api" ? 1 : Math.max(1, Math.round(teamSize / 2));
-    const selections: ToolSelection[] = Object.entries(selected).map(([toolKey, plan]) => ({
+    const selections: ToolSelection[] = Object.entries(selected).map(([toolKey, state]) => ({
       toolKey,
-      plan,
-      seats,
+      plan: state.plan,
+      seats: state.seats,
     }));
-    return calculateBreakdowns(selections);
-  }, [selected, teamSize, useCase]);
+    return calculateBreakdowns(selections, teamSize);
+  }, [selected, teamSize]);
 
   const total = useMemo(() => breakdowns.reduce((sum, b) => sum + b.totalMonthly, 0), [breakdowns]);
   

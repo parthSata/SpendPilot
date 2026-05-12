@@ -1,7 +1,7 @@
 export const PRICING_DATA = {
   cursor: {
     label: "Cursor",
-    emoji: "⚡",
+    logo: "https://www.google.com/s2/favicons?domain=cursor.com&sz=128",
     color: "#a855f7",
     verifiedAt: "2026-05-10",
     url: "https://www.cursor.com/pricing",
@@ -9,7 +9,7 @@ export const PRICING_DATA = {
   },
   chatgpt: {
     label: "ChatGPT",
-    emoji: "🧠",
+    logo: "https://www.google.com/s2/favicons?domain=openai.com&sz=128",
     color: "#10a37f",
     verifiedAt: "2026-05-10",
     url: "https://openai.com/chatgpt/pricing/",
@@ -17,7 +17,7 @@ export const PRICING_DATA = {
   },
   claude: {
     label: "Claude",
-    emoji: "🤖",
+    logo: "https://www.google.com/s2/favicons?domain=anthropic.com&sz=128",
     color: "#d97757",
     verifiedAt: "2026-05-10",
     url: "https://www.anthropic.com/pricing",
@@ -25,7 +25,7 @@ export const PRICING_DATA = {
   },
   github_copilot: {
     label: "GitHub Copilot",
-    emoji: "🐙",
+    logo: "https://www.google.com/s2/favicons?domain=github.com&sz=128",
     color: "#2ea043",
     verifiedAt: "2026-05-10",
     url: "https://github.com/features/copilot#pricing",
@@ -33,7 +33,7 @@ export const PRICING_DATA = {
   },
   gemini: {
     label: "Google Gemini",
-    emoji: "✨",
+    logo: "https://www.google.com/s2/favicons?domain=gemini.google.com&sz=128",
     color: "#1a73e8",
     verifiedAt: "2026-05-10",
     url: "https://gemini.google.com/advanced",
@@ -41,7 +41,7 @@ export const PRICING_DATA = {
   },
   openai_api: {
     label: "OpenAI API",
-    emoji: "⚙️",
+    logo: "https://www.google.com/s2/favicons?domain=openai.com&sz=128",
     color: "#412991",
     verifiedAt: "2026-05-10",
     url: "https://openai.com/api/pricing/",
@@ -49,11 +49,19 @@ export const PRICING_DATA = {
   },
   anthropic_api: {
     label: "Anthropic API",
-    emoji: "🏗️",
+    logo: "https://www.google.com/s2/favicons?domain=anthropic.com&sz=128",
     color: "#CC785C",
     verifiedAt: "2026-05-10",
     url: "https://www.anthropic.com/api",
     plans: { build: 30, scale: 150, enterprise: "custom" }
+  },
+  windsurf: {
+    label: "Windsurf",
+    logo: "https://www.google.com/s2/favicons?domain=codeium.com&sz=128",
+    color: "#09C299",
+    verifiedAt: "2026-05-11",
+    url: "https://codeium.com/windsurf/pricing",
+    plans: { free: 0, pro: 15, team: 30, enterprise: "custom" }
   }
 } as const;
 
@@ -69,6 +77,7 @@ export interface CostBreakdown {
   seats: number;
   pricePerSeat: number;
   totalMonthly: number;
+  wastedSeats: number;
 }
 
 export interface Recommendation {
@@ -76,24 +85,27 @@ export interface Recommendation {
   currentPlan: string;
   suggestedPlan: string;
   monthlySavings: number;
+  reason: string;
 }
 
 export function getPrice(toolKey: string, plan: string): number {
   const tool = PRICING_DATA[toolKey as keyof typeof PRICING_DATA];
   if (!tool) return 0;
   const p = (tool.plans as any)[plan];
-  return typeof p === 'number' ? p : 0;
+  return typeof p === "number" ? p : 0;
 }
 
-export function calculateBreakdowns(selections: ToolSelection[]): CostBreakdown[] {
-  return selections.map(sel => {
+export function calculateBreakdowns(selections: ToolSelection[], totalTeamSize: number): CostBreakdown[] {
+  return selections.map((sel) => {
     const pricePerSeat = getPrice(sel.toolKey, sel.plan);
+    const wastedSeats = Math.max(0, sel.seats - totalTeamSize);
     return {
       toolKey: sel.toolKey,
       plan: sel.plan,
       seats: sel.seats,
       pricePerSeat,
-      totalMonthly: pricePerSeat * sel.seats
+      totalMonthly: pricePerSeat * sel.seats,
+      wastedSeats,
     };
   });
 }
@@ -104,32 +116,48 @@ export function getTotalMonthlySpend(breakdowns: CostBreakdown[]): number {
 
 export function getRecommendations(breakdowns: CostBreakdown[]): Recommendation[] {
   const recs: Recommendation[] = [];
-  
+
   for (const b of breakdowns) {
-    if (b.pricePerSeat > 0) {
-      const tool = PRICING_DATA[b.toolKey as keyof typeof PRICING_DATA];
-      if (!tool) continue;
+    const tool = PRICING_DATA[b.toolKey as keyof typeof PRICING_DATA];
+    if (!tool) continue;
+
+    let toolSavings = 0;
+    let suggestedPlan = b.plan;
+    let reason = "";
+
+    // 1. Check for wasted seats (Over-provisioning)
+    if (b.wastedSeats > 0 && b.pricePerSeat > 0) {
+      toolSavings += b.wastedSeats * b.pricePerSeat;
+      reason = `You have ${b.wastedSeats} unused seats compared to your total team size.`;
+    }
+
+    // 2. Check for cheaper plans
+    const plansList = Object.entries(tool.plans);
+    const cheaperPlans = plansList.filter(([_, cost]) => typeof cost === "number" && (cost as number) < b.pricePerSeat);
+
+    if (cheaperPlans.length > 0) {
+      cheaperPlans.sort((x, y) => (y[1] as number) - (x[1] as number));
+      const [newPlan, newPrice] = cheaperPlans[0];
+      const planSavings = (b.pricePerSeat - (newPrice as number)) * (b.seats - b.wastedSeats);
       
-      const plansList = Object.entries(tool.plans);
-      const cheaperPlans = plansList.filter(([_, cost]) => typeof cost === 'number' && cost < b.pricePerSeat);
-      
-      if (cheaperPlans.length > 0) {
-        cheaperPlans.sort((x, y) => (y[1] as number) - (x[1] as number));
-        const [suggestedPlan, suggestedPrice] = cheaperPlans[0];
-        const monthlySavings = (b.pricePerSeat - (suggestedPrice as number)) * b.seats;
-        
-        if (monthlySavings > 0) {
-          recs.push({
-            toolKey: b.toolKey,
-            currentPlan: b.plan,
-            suggestedPlan,
-            monthlySavings
-          });
-        }
+      if (planSavings > 0) {
+        toolSavings += planSavings;
+        suggestedPlan = newPlan;
+        reason += (reason ? " Also, d" : "D") + `owngrade to ${newPlan} plan to save $${(b.pricePerSeat - (newPrice as number))}/seat.`;
       }
     }
+
+    if (toolSavings > 0) {
+      recs.push({
+        toolKey: b.toolKey,
+        currentPlan: b.plan,
+        suggestedPlan,
+        monthlySavings: toolSavings,
+        reason: reason || "Optimize seat count and plan selection.",
+      });
+    }
   }
-  
+
   return recs;
 }
 
@@ -139,5 +167,7 @@ export function getTotalSavings(recommendations: Recommendation[]): number {
 
 export function formatPrice(price: number): string {
   if (price === 0) return "Free";
-  return "$" + price + "/mo";
+  if (price >= 1000000) return "$" + (price / 1000000).toFixed(1) + "M";
+  if (price >= 1000) return "$" + (price / 1000).toFixed(1) + "K";
+  return "$" + price.toLocaleString();
 }

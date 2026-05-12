@@ -77,8 +77,22 @@ export function PublicReportPage({ shareId }: PublicReportPageProps) {
                     transition={{ delay: 0.2 + index * 0.06 }}
                     className="glass-strong rounded-2xl p-5 flex items-center gap-4"
                   >
-                    <div className="h-10 w-10 rounded-lg bg-white/5 grid place-items-center text-xl">
-                      {tool.emoji}
+                    <div className="h-10 w-10 rounded-lg bg-white/5 p-1.5 flex items-center justify-center">
+                      <img 
+                        src={`https://www.google.com/s2/favicons?domain=${
+                          tool.toolName.toLowerCase().includes('cursor') ? 'cursor.com' :
+                          tool.toolName.toLowerCase().includes('copilot') ? 'github.com' :
+                          tool.toolName.toLowerCase().includes('claude') ? 'anthropic.com' :
+                          tool.toolName.toLowerCase().includes('chatgpt') ? 'openai.com' :
+                          tool.toolName.toLowerCase().includes('gemini') ? 'gemini.google.com' :
+                          tool.toolName.toLowerCase().includes('openai') ? 'openai.com' :
+                          tool.toolName.toLowerCase().includes('anthropic') ? 'anthropic.com' :
+                          tool.toolName.toLowerCase().includes('windsurf') ? 'codeium.com' :
+                          'openai.com'
+                        }&sz=128`}
+                        alt={tool.toolName}
+                        className="w-full h-full object-contain"
+                      />
                     </div>
                     <div className="flex-1">
                       <span className="font-medium block">{tool.toolName}</span>
