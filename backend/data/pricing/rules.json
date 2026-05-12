@@ -1,4 +1,4 @@
 {
-  "version": 1,
-  "notes": "Placeholder pricing rules. Replace with audited official pricing and recommendation logic."
+  "version": 2,
+  "notes": "Plan-level rules live in data/pricing/plans.json (orderedPlans + planFit.maxIntensity). API heavy downgrade guard lives in src/services/audit-engine.js."
 }

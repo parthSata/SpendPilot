@@ -20,6 +20,7 @@ const toolInputSchema = z.object({
 const runAuditSchema = z.object({
   teamSize: z.coerce.number().int().positive(),
   primaryUseCase: z.enum(["coding", "writing", "research", "data", "mixed"]),
+  usageIntensity: z.enum(["light", "medium", "heavy"]).default("medium"),
   tools: z.array(toolInputSchema).min(1),
   lead: z
     .object({

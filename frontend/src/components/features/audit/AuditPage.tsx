@@ -19,6 +19,7 @@ export function AuditPage() {
     selected,
     teamSize,
     useCase,
+    usageIntensity,
     total,
     estSavings,
     steps,
@@ -26,6 +27,7 @@ export function AuditPage() {
     setSelected,
     setTeamSize,
     setUseCase,
+    setUsageIntensity,
     next,
     prev,
     isSubmitting,
@@ -77,8 +79,18 @@ export function AuditPage() {
               >
                 {step === 0 && <ToolsStep selected={selected} setSelected={setSelected} />}
                 {step === 1 && <TeamStep teamSize={teamSize} setTeamSize={setTeamSize} />}
-                {step === 2 && <UseCaseStep useCase={useCase} useCases={useCases} setUseCase={setUseCase} />}
-                {step === 3 && <ReviewStep selected={selected} teamSize={teamSize} useCase={useCase} />}
+                {step === 2 && (
+                  <UseCaseStep
+                    useCase={useCase}
+                    useCases={useCases}
+                    setUseCase={setUseCase}
+                    usageIntensity={usageIntensity}
+                    setUsageIntensity={setUsageIntensity}
+                  />
+                )}
+                {step === 3 && (
+                  <ReviewStep selected={selected} teamSize={teamSize} useCase={useCase} usageIntensity={usageIntensity} />
+                )}
               </motion.div>
             </AnimatePresence>
 

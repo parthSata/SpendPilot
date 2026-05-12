@@ -27,6 +27,7 @@ export function ResultsPage({ shareId }: ResultsPageProps) {
     tools,
     shareUrl,
     aiSummary,
+    usageIntensity,
     pricingLastUpdated,
     loading,
     error,
@@ -43,18 +44,23 @@ export function ResultsPage({ shareId }: ResultsPageProps) {
   const { summary: clientSummary, isLoading: summaryLoading, error: summaryError, generateSummary } = useAISummary();
 
   useEffect(() => {
-    if (tools && tools.length > 0 && !clientSummary && !summaryLoading && !summaryError) {
-      const totalSpend = tools.reduce((sum, t) => sum + t.monthlySpend, 0);
-      const totalSavings = tools.reduce((sum, t) => sum + t.monthlySavings, 0);
-      const recommendations = tools.map(t => ({
-        toolKey: t.toolName,
-        currentPlan: "Current Plan", // Fallback if not mapped
-        suggestedPlan: t.recommendedPlan,
-        monthlySavings: t.monthlySavings
-      }));
-
-      generateSummary({ totalSpend, totalSavings, recommendations });
+    if (!tools?.length || clientSummary || summaryLoading || summaryError) {
+      return undefined;
     }
+
+    const totalSpend = tools.reduce((sum, t) => sum + t.monthlySpend, 0);
+    const totalSavings = tools.reduce((sum, t) => sum + t.monthlySavings, 0);
+    const recommendations = tools.map((t) => ({
+      toolKey: t.toolName,
+      currentPlan: "Current Plan",
+      suggestedPlan: t.recommendedPlan,
+      monthlySavings: t.monthlySavings,
+    }));
+
+    const id = window.setTimeout(() => {
+      void generateSummary({ totalSpend, totalSavings, recommendations });
+    }, 400);
+    return () => window.clearTimeout(id);
   }, [tools, clientSummary, summaryLoading, summaryError, generateSummary]);
 
   const displaySummary = summaryLoading ? "Generating fresh AI summary directly in your browser..." : (clientSummary || aiSummary);
@@ -93,7 +99,12 @@ export function ResultsPage({ shareId }: ResultsPageProps) {
             </div>
           ) : (
             <>
-              <ResultsHeroSection monthly={monthly} yearly={yearly} reductionPct={reductionPct} />
+              <ResultsHeroSection
+                monthly={monthly}
+                yearly={yearly}
+                reductionPct={reductionPct}
+                usageIntensity={usageIntensity}
+              />
               <AiSummarySection summary={displaySummary} />
               <ResultsChartsSection trend={trend} tools={tools} />
               <ToolRecommendationsSection tools={tools} />

@@ -28,6 +28,7 @@ export function useAuditFlow() {
   });
   const [teamSize, setTeamSize] = useState(10);
   const [useCase, setUseCase] = useState("engineering");
+  const [usageIntensity, setUsageIntensity] = useState<"light" | "medium" | "heavy">("medium");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
@@ -43,9 +44,9 @@ export function useAuditFlow() {
   const total = useMemo(() => breakdowns.reduce((sum, b) => sum + b.totalMonthly, 0), [breakdowns]);
   
   const estSavings = useMemo(() => {
-    const recommendations = getRecommendations(breakdowns);
+    const recommendations = getRecommendations(breakdowns, { teamSize, usageIntensity });
     return getTotalSavings(recommendations);
-  }, [breakdowns]);
+  }, [breakdowns, teamSize, usageIntensity]);
 
   const next = async () => {
     if (step < AUDIT_STEPS.length - 1) {
@@ -76,6 +77,7 @@ export function useAuditFlow() {
       const response = await runAuditApi({
         teamSize,
         primaryUseCase: mappedUseCase,
+        usageIntensity,
         tools: toolsPayload,
       });
 
@@ -101,6 +103,7 @@ export function useAuditFlow() {
     selected,
     teamSize,
     useCase,
+    usageIntensity,
     total,
     estSavings,
     steps: AUDIT_STEPS,
@@ -108,6 +111,7 @@ export function useAuditFlow() {
     setSelected,
     setTeamSize,
     setUseCase,
+    setUsageIntensity,
     next,
     prev,
     isSubmitting,

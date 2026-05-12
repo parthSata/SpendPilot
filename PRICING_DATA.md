@@ -14,6 +14,15 @@ This document tracks the official pricing sources used for AI Spend Audit recomm
 | **Windsurf** | [codeium.com/windsurf/pricing](https://codeium.com/windsurf/pricing) | 2026-05-11 | Pro ($15), Team ($30) |
 
 ## Audit Methodology
-- **Wasted Seats:** Calculated as `Math.max(0, Tool_Seats - Total_Team_Size)`.
-- **Optimization:** Recommendations suggest downgrading to the highest possible tier that is still cheaper than the current plan.
-- **Defensibility:** Every recommendation is backed by a specific seat count comparison or plan-price delta.
+
+- **Wasted seats:** `max(0, tool_seats − team_size)` — billed seats above headcount.
+- **Plan price deltas:** Official per-seat (or tier list) prices from the URLs above; see [backend/data/pricing/plans.json](backend/data/pricing/plans.json) for ordered tiers.
+- **Usage intensity (self-reported):** `light` | `medium` | `heavy`. Each catalog plan includes `planFit.maxIntensity` — we **do not** recommend a cheaper plan if it cannot support the declared intensity (e.g. **Free** for **heavy** ChatGPT/consumer tiers).
+- **API tier jumps:** For tools whose ids end with `_api`, **heavy** usage applies an extra guard so we do not recommend a single-step price drop that would likely be undone by overages (heuristic in code; not a vendor quote).
+- **Defensibility:** Savings are either (1) seat reclamation, (2) a cheaper tier that still passes the intensity gate, or (3) explicitly **no plan change** with a written rationale — we avoid “free for everyone” unless the user declares **light** usage and the tier supports it.
+
+### When we do NOT recommend downgrading
+
+- Declared **heavy** usage and the only cheaper tiers have `maxIntensity` below `heavy`.
+- Hosted API: monthly sticker-price improvement exceeds the conservative threshold in [backend/src/services/audit-engine.js](backend/src/services/audit-engine.js) for **heavy** workloads.
+- Already on the lowest priced tier in our catalog for that product.

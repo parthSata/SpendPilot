@@ -6,9 +6,10 @@ type ResultsHeroSectionProps = {
   monthly: number;
   yearly: number;
   reductionPct: number;
+  usageIntensity?: string;
 };
 
-export function ResultsHeroSection({ monthly, yearly, reductionPct }: ResultsHeroSectionProps) {
+export function ResultsHeroSection({ monthly, yearly, reductionPct, usageIntensity }: ResultsHeroSectionProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -17,9 +18,14 @@ export function ResultsHeroSection({ monthly, yearly, reductionPct }: ResultsHer
     >
       <div className="absolute -inset-6 bg-linear-to-r from-(--electric)/30 via-(--violet)/30 to-(--cyan)/30 blur-3xl rounded-3xl" />
       <div className="relative glass-strong rounded-3xl p-8 md:p-12 gradient-border">
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2 text-xs">
           <Sparkles className="h-3.5 w-3.5 text-cyan" />
           <span className="uppercase tracking-wider text-muted-foreground">Your savings report</span>
+          {usageIntensity ? (
+            <span className="ml-auto sm:ml-0 rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 capitalize text-muted-foreground">
+              Usage: {usageIntensity}
+            </span>
+          ) : null}
         </div>
         <h1 className="mt-4 text-4xl md:text-6xl font-bold tracking-tight">You can save</h1>
         <div className="mt-4 text-7xl md:text-9xl font-bold gradient-text leading-none">

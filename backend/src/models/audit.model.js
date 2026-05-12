@@ -5,13 +5,20 @@ const toolSchema = new mongoose.Schema({
   currentPlan: String,
   monthlySpend: Number,
   seats: Number,
+  wastedSeats: Number,
   recommendedPlan: String,
   recommendedTool: String,
   monthlySavings: Number,
   annualSavings: Number,
   reason: String,
+  recommendationType: {
+    type: String,
+    enum: ["downgrade_plan", "reduce_seats", "keep_plan", "insufficient_data"],
+    default: "keep_plan",
+  },
+  emoji: String,
   source: String,
-  sourceUrl: String
+  sourceUrl: String,
 });
 
 const auditSchema = new mongoose.Schema(
@@ -24,7 +31,12 @@ const auditSchema = new mongoose.Schema(
     teamSize: Number,
     primaryUseCase: {
       type: String,
-      enum: ["coding", "writing", "research", "data", "mixed"]
+      enum: ["coding", "writing", "research", "data", "mixed"],
+    },
+    usageIntensity: {
+      type: String,
+      enum: ["light", "medium", "heavy"],
+      default: "medium",
     },
     tools: [toolSchema],
     totalMonthlySpend: Number,

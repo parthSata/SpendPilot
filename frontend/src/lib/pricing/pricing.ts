@@ -1,3 +1,6 @@
+import type { UsageIntensity } from "./plan-fit";
+import { apiDowngradeAllowed, planSupportsUsage } from "./plan-fit";
+
 export const PRICING_DATA = {
   cursor: {
     label: "Cursor",
@@ -86,6 +89,7 @@ export interface Recommendation {
   suggestedPlan: string;
   monthlySavings: number;
   reason: string;
+  recommendationType: "downgrade_plan" | "reduce_seats" | "keep_plan";
 }
 
 export function getPrice(toolKey: string, plan: string): number {
@@ -114,7 +118,12 @@ export function getTotalMonthlySpend(breakdowns: CostBreakdown[]): number {
   return breakdowns.reduce((sum, b) => sum + b.totalMonthly, 0);
 }
 
-export function getRecommendations(breakdowns: CostBreakdown[]): Recommendation[] {
+export function getRecommendations(
+  breakdowns: CostBreakdown[],
+  options?: { teamSize?: number; usageIntensity?: UsageIntensity }
+): Recommendation[] {
+  const usageIntensity = options?.usageIntensity ?? "medium";
+  const teamSize = options?.teamSize ?? 999;
   const recs: Recommendation[] = [];
 
   for (const b of breakdowns) {
@@ -123,37 +132,52 @@ export function getRecommendations(breakdowns: CostBreakdown[]): Recommendation[
 
     let toolSavings = 0;
     let suggestedPlan = b.plan;
-    let reason = "";
+    const reasons: string[] = [];
+    let recommendationType: Recommendation["recommendationType"] = "keep_plan";
 
-    // 1. Check for wasted seats (Over-provisioning)
-    if (b.wastedSeats > 0 && b.pricePerSeat > 0) {
-      toolSavings += b.wastedSeats * b.pricePerSeat;
-      reason = `You have ${b.wastedSeats} unused seats compared to your total team size.`;
+    const wastedSeats = Math.max(0, b.seats - teamSize);
+    const activeSeats = Math.max(0, b.seats - wastedSeats);
+
+    if (wastedSeats > 0 && b.pricePerSeat > 0) {
+      toolSavings += wastedSeats * b.pricePerSeat;
+      reasons.push(
+        `You have ${wastedSeats} unused seat${wastedSeats === 1 ? "" : "s"} compared to your total team size (${teamSize}).`
+      );
+      recommendationType = "reduce_seats";
     }
 
-    // 2. Check for cheaper plans
-    const plansList = Object.entries(tool.plans);
-    const cheaperPlans = plansList.filter(([_, cost]) => typeof cost === "number" && (cost as number) < b.pricePerSeat);
+    const plansList = Object.entries(tool.plans).filter(
+      ([_, cost]) => typeof cost === "number"
+    ) as [string, number][];
+    const cheaperPlans = plansList
+      .filter(([name, cost]) => cost < b.pricePerSeat)
+      .filter(([name]) => planSupportsUsage(b.toolKey, name, usageIntensity))
+      .filter(([name, cost]) =>
+        apiDowngradeAllowed(b.toolKey, usageIntensity, b.pricePerSeat, cost, activeSeats)
+      )
+      .sort((x, y) => y[1] - x[1]);
 
-    if (cheaperPlans.length > 0) {
-      cheaperPlans.sort((x, y) => (y[1] as number) - (x[1] as number));
+    if (cheaperPlans.length > 0 && activeSeats > 0) {
       const [newPlan, newPrice] = cheaperPlans[0];
-      const planSavings = (b.pricePerSeat - (newPrice as number)) * (b.seats - b.wastedSeats);
-      
+      const planSavings = (b.pricePerSeat - newPrice) * activeSeats;
       if (planSavings > 0) {
         toolSavings += planSavings;
         suggestedPlan = newPlan;
-        reason += (reason ? " Also, d" : "D") + `owngrade to ${newPlan} plan to save $${(b.pricePerSeat - (newPrice as number))}/seat.`;
+        reasons.push(
+          `At ${usageIntensity} usage, ${newPlan} still fits your workload and saves ~$${b.pricePerSeat - newPrice}/seat/mo on ${activeSeats} active seat${activeSeats === 1 ? "" : "s"}.`
+        );
       }
     }
 
     if (toolSavings > 0) {
+      recommendationType = suggestedPlan === b.plan ? "reduce_seats" : "downgrade_plan";
       recs.push({
         toolKey: b.toolKey,
         currentPlan: b.plan,
         suggestedPlan,
-        monthlySavings: toolSavings,
-        reason: reason || "Optimize seat count and plan selection.",
+        monthlySavings: Math.round(toolSavings),
+        reason: reasons.join(" "),
+        recommendationType,
       });
     }
   }

@@ -6,105 +6,10 @@ import { LeadModel } from "../models/lead.model.js";
 import { SharedReportModel } from "../models/shared-report.model.js";
 import { sendEmail } from "../utils/sendEmail.js";
 import { env } from "../config/env.js";
+import { buildToolRecommendations, normalizePlansBundle } from "./audit-engine.js";
 
 const toolsPath = new URL("../../data/pricing/tools.json", import.meta.url);
 const plansPath = new URL("../../data/pricing/plans.json", import.meta.url);
-
-const useCaseFactors = {
-  coding: 1.2,
-  writing: 0.7,
-  research: 0.9,
-  data: 1.1,
-  mixed: 1.0,
-};
-
-const toolPricing = {
-  cursor: { hobby: 0, pro: 20, business: 40 },
-  chatgpt: { free: 0, plus: 20, team: 30 },
-  claude: { free: 0, pro: 20, max: 100, team: 30 },
-  github_copilot: { free: 0, individual: 10, business: 19, enterprise: 39 },
-  gemini: { free: 0, advanced: 20, business: 24 },
-  openai_api: { starter: 50, growth: 200, scale: 500 },
-  anthropic_api: { build: 30, scale: 150 },
-  windsurf: { free: 0, pro: 15, team: 30 }
-};
-
-const calculateToolRecommendation = (item, plansCatalog, toolsCatalog, useCaseFactor, totalTeamSize) => {
-  const toolId = mapToolId(item.toolName, toolsCatalog);
-  const toolInfo = findToolInfo(item.toolName, toolsCatalog);
-  const pricing = toolPricing[toolId] || globalPlanFallbacks;
-
-  const getPrice = (plan) => {
-    const p = plan.toLowerCase();
-    return pricing[p] ?? globalPlanFallbacks[p] ?? 0;
-  };
-
-  const currentPricePerSeat = getPrice(item.currentPlan);
-  const seats = Math.max(1, item.seats);
-  const wastedSeats = Math.max(0, seats - totalTeamSize);
-
-  const knownPlans = plansCatalog[toolId] ?? ["Pro", "Business"];
-  const sortedPlans = [...knownPlans].sort(
-    (a, b) => getPrice(a) - getPrice(b)
-  );
-
-  // Find all plans that are cheaper than the current spend per seat
-  const cheaperPlans = sortedPlans
-    .filter(p => getPrice(p) < currentPricePerSeat)
-    .sort((a, b) => getPrice(b) - getPrice(a)); // Highest price first to maintain features
-
-  const recommendedPlan = cheaperPlans.length > 0 ? cheaperPlans[0] : item.currentPlan;
-  const targetPerSeat = getPrice(recommendedPlan);
-
-  let monthlySavings = 0;
-  let reason = "";
-
-  // 1. Savings from wasted seats
-  if (wastedSeats > 0 && currentPricePerSeat > 0) {
-    monthlySavings += wastedSeats * currentPricePerSeat;
-    reason = `You have ${wastedSeats} unused seats compared to your total team size.`;
-  }
-
-  // 2. Savings from plan downgrade (on remaining active seats)
-  const activeSeats = seats - wastedSeats;
-  const planSavings = (currentPricePerSeat - targetPerSeat) * activeSeats;
-  if (planSavings > 0) {
-    monthlySavings += planSavings;
-    reason += (reason ? " Also, d" : "D") + `owngrade to ${recommendedPlan} plan to save $${(currentPricePerSeat - targetPerSeat)}/seat.`;
-  }
-
-  if (monthlySavings === 0) {
-    reason = "Current plan and seat count are already efficient for your team size.";
-  }
-
-  const annualSavings = Math.round(monthlySavings * 12);
-
-  return {
-    toolName: item.toolName,
-    currentPlan: item.currentPlan,
-    monthlySpend: item.monthlySpend,
-    seats,
-    wastedSeats,
-    recommendedPlan,
-    recommendedTool: item.toolName,
-    monthlySavings: Math.round(monthlySavings),
-    annualSavings,
-    reason,
-    emoji: toolInfo?.emoji || "🤖",
-    source: toolInfo?.source || "Pricing Data",
-    sourceUrl: toolInfo?.sourceUrl || "",
-  };
-};
-
-// Fallback for general plan names if tool mapping fails
-const globalPlanFallbacks = {
-  free: 0,
-  plus: 20,
-  pro: 20,
-  team: 30,
-  business: 40,
-  enterprise: 50
-};
 
 const parsePricingCatalog = async () => {
   const [toolsRaw, plansRaw] = await Promise.all([
@@ -117,38 +22,36 @@ const parsePricingCatalog = async () => {
 
   return {
     tools: toolsData.tools || toolsData,
-    plans: plansData,
+    plansByTool: normalizePlansBundle(plansData),
     lastUpdated: toolsData.lastUpdated || new Date().toISOString(),
   };
 };
 
-const mapToolId = (toolName, toolsCatalog) => {
-  const normalized = toolName.trim().toLowerCase();
-  const match = toolsCatalog.find(
-    (tool) => tool.id.toLowerCase() === normalized || tool.name.toLowerCase() === normalized
-  );
-  return match?.id ?? normalized.replace(/\s+/g, "_");
-};
-
-const findToolInfo = (toolName, toolsCatalog) => {
-  const normalized = toolName.trim().toLowerCase();
-  return toolsCatalog.find(
-    (tool) => tool.id.toLowerCase() === normalized || tool.name.toLowerCase() === normalized
-  );
-};
-
-const buildFallbackSummary = ({ totalMonthlySavings, totalAnnualSavings, primaryUseCase, recommendations }) => {
+const buildFallbackSummary = ({
+  totalMonthlySavings,
+  totalAnnualSavings,
+  primaryUseCase,
+  usageIntensity,
+  recommendations,
+}) => {
   const topItems = recommendations
     .filter((item) => item.monthlySavings > 0)
     .sort((a, b) => b.monthlySavings - a.monthlySavings)
     .slice(0, 3)
     .map((item) => `${item.toolName} (${item.monthlySavings}/mo)`);
 
+  const kept = recommendations.filter((item) => item.recommendationType === "keep_plan" && item.monthlySavings === 0);
+
   const topLine = topItems.length
     ? `Top opportunities: ${topItems.join(", ")}.`
     : "Current stack is already optimized with low immediate savings opportunities.";
 
-  return `For a ${primaryUseCase} focused team, estimated savings are $${totalMonthlySavings}/mo ($${totalAnnualSavings}/yr). ${topLine}`;
+  const keepLine =
+    kept.length > 0
+      ? ` At ${usageIntensity} usage intensity, ${kept.length} tool${kept.length === 1 ? "" : "s"} should stay on the current paid tier to avoid limits or rework costs.`
+      : "";
+
+  return `For a ${primaryUseCase} focused team, estimated savings are $${totalMonthlySavings}/mo ($${totalAnnualSavings}/yr). ${topLine}${keepLine}`;
 };
 
 const buildGeminiSummary = async (payload) => {
@@ -165,6 +68,8 @@ ${JSON.stringify(payload, null, 2)}
 Rules:
 - mention estimated monthly and annual savings
 - highlight top 2 opportunities
+- if any recommendationType is "keep_plan" with monthlySavings 0, acknowledge that heavy usage can block naive downgrades
+- do not claim blanket downgrades if tools are marked keep_plan
 - keep tone practical and direct
 - no markdown`;
 
@@ -176,13 +81,15 @@ Rules:
   }
 };
 
-export const runAudit = async ({ teamSize, primaryUseCase, tools, lead }) => {
-  const { tools: toolsCatalog, plans: plansCatalog, lastUpdated } = await parsePricingCatalog();
-  const useCaseFactor = useCaseFactors[primaryUseCase] ?? 1;
+export const runAudit = async ({ teamSize, primaryUseCase, usageIntensity = "medium", tools, lead }) => {
+  const { tools: toolsCatalog, plansByTool, lastUpdated } = await parsePricingCatalog();
 
-  const recommendations = tools.map((item) =>
-    calculateToolRecommendation(item, plansCatalog, toolsCatalog, useCaseFactor, teamSize)
-  );
+  const recommendations = buildToolRecommendations(tools, {
+    plansByTool,
+    toolsCatalog,
+    teamSize,
+    usageIntensity,
+  });
 
   const totalMonthlySpend = recommendations.reduce((sum, item) => sum + item.monthlySpend, 0);
   const totalMonthlySavings = recommendations.reduce((sum, item) => sum + item.monthlySavings, 0);
@@ -195,6 +102,7 @@ export const runAudit = async ({ teamSize, primaryUseCase, tools, lead }) => {
   const aiSummary = await buildGeminiSummary({
     teamSize,
     primaryUseCase,
+    usageIntensity,
     totalMonthlySpend,
     totalMonthlySavings,
     totalAnnualSavings,
@@ -205,6 +113,7 @@ export const runAudit = async ({ teamSize, primaryUseCase, tools, lead }) => {
   const audit = await AuditModel.create({
     teamSize,
     primaryUseCase,
+    usageIntensity,
     tools: recommendations,
     totalMonthlySpend,
     totalMonthlySavings,
@@ -240,6 +149,7 @@ export const runAudit = async ({ teamSize, primaryUseCase, tools, lead }) => {
     shareId,
     teamSize,
     primaryUseCase,
+    usageIntensity,
     totalMonthlySpend,
     totalMonthlySavings,
     totalAnnualSavings,
@@ -269,6 +179,7 @@ export const getSharedAudit = async (shareId) => {
     createdAt: audit.createdAt,
     teamSize: audit.teamSize,
     primaryUseCase: audit.primaryUseCase,
+    usageIntensity: audit.usageIntensity ?? "medium",
     totalMonthlySpend: audit.totalMonthlySpend,
     totalMonthlySavings: audit.totalMonthlySavings,
     totalAnnualSavings: audit.totalAnnualSavings,

@@ -45,6 +45,7 @@ export type RunAuditResponse = {
   shareId: string;
   teamSize: number;
   primaryUseCase: string;
+  usageIntensity?: string;
   totalMonthlySpend: number;
   totalMonthlySavings: number;
   totalAnnualSavings: number;
@@ -56,11 +57,14 @@ export type RunAuditResponse = {
     currentPlan: string;
     monthlySpend: number;
     seats: number;
+    wastedSeats?: number;
     recommendedPlan: string;
     recommendedTool: string;
     monthlySavings: number;
     annualSavings: number;
     reason: string;
+    recommendationType?: string;
+    emoji?: string;
     source?: string;
     sourceUrl?: string;
   }>;
@@ -74,6 +78,7 @@ export type SharedAuditResponse = RunAuditResponse & {
 export const runAuditApi = (payload: {
   teamSize: number;
   primaryUseCase: "coding" | "writing" | "research" | "data" | "mixed";
+  usageIntensity?: "light" | "medium" | "heavy";
   tools: AuditToolPayload[];
   lead?: { email: string; companyName?: string; role?: string };
 }) =>

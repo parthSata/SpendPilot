@@ -1,10 +1,67 @@
 {
-  "cursor": ["Hobby", "Pro", "Business"],
-  "github_copilot": ["Free", "Individual", "Business", "Enterprise"],
-  "claude": ["Free", "Pro", "Max", "Team"],
-  "chatgpt": ["Free", "Plus", "Team"],
-  "anthropic_api": ["Build", "Scale"],
-  "openai_api": ["Starter", "Growth", "Scale"],
-  "gemini": ["Free", "Advanced", "Business"],
-  "windsurf": ["Free", "Pro", "Team"]
+  "cursor": {
+    "orderedPlans": ["Hobby", "Pro", "Business"],
+    "planFit": {
+      "hobby": { "maxIntensity": "medium" },
+      "pro": { "maxIntensity": "heavy" },
+      "business": { "maxIntensity": "heavy" }
+    }
+  },
+  "github_copilot": {
+    "orderedPlans": ["Free", "Individual", "Business", "Enterprise"],
+    "planFit": {
+      "free": { "maxIntensity": "light" },
+      "individual": { "maxIntensity": "heavy" },
+      "business": { "maxIntensity": "heavy" },
+      "enterprise": { "maxIntensity": "heavy" }
+    }
+  },
+  "claude": {
+    "orderedPlans": ["Free", "Pro", "Max", "Team"],
+    "planFit": {
+      "free": { "maxIntensity": "light" },
+      "pro": { "maxIntensity": "heavy" },
+      "max": { "maxIntensity": "heavy" },
+      "team": { "maxIntensity": "heavy" }
+    }
+  },
+  "chatgpt": {
+    "orderedPlans": ["Free", "Plus", "Team"],
+    "planFit": {
+      "free": { "maxIntensity": "light" },
+      "plus": { "maxIntensity": "heavy" },
+      "team": { "maxIntensity": "heavy" }
+    }
+  },
+  "anthropic_api": {
+    "orderedPlans": ["Build", "Scale"],
+    "planFit": {
+      "build": { "maxIntensity": "heavy" },
+      "scale": { "maxIntensity": "heavy" }
+    }
+  },
+  "openai_api": {
+    "orderedPlans": ["Starter", "Growth", "Scale"],
+    "planFit": {
+      "starter": { "maxIntensity": "heavy" },
+      "growth": { "maxIntensity": "heavy" },
+      "scale": { "maxIntensity": "heavy" }
+    }
+  },
+  "gemini": {
+    "orderedPlans": ["Free", "Advanced", "Business"],
+    "planFit": {
+      "free": { "maxIntensity": "light" },
+      "advanced": { "maxIntensity": "heavy" },
+      "business": { "maxIntensity": "heavy" }
+    }
+  },
+  "windsurf": {
+    "orderedPlans": ["Free", "Pro", "Team"],
+    "planFit": {
+      "free": { "maxIntensity": "light" },
+      "pro": { "maxIntensity": "medium" },
+      "team": { "maxIntensity": "heavy" }
+    }
+  }
 }

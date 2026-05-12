@@ -16,6 +16,7 @@ export type ToolRecommendation = {
   monthlySavings: number;
   reason: string;
   severity: "high" | "medium" | "low";
+  recommendationType?: string;
   source?: string;
   sourceUrl?: string;
 };
@@ -78,6 +79,7 @@ export function useResultsPage(shareId?: string) {
         recommendedPlan: tool.recommendedPlan,
         monthlySavings: tool.monthlySavings,
         reason: tool.reason,
+        recommendationType: tool.recommendationType ?? "keep_plan",
         source: tool.source,
         sourceUrl: tool.sourceUrl,
         severity:
@@ -147,6 +149,7 @@ export function useResultsPage(shareId?: string) {
     shareUrl,
     shareId: shareId || "",
     aiSummary: audit?.aiSummary || "",
+    usageIntensity: audit?.usageIntensity ?? "medium",
     pricingLastUpdated: audit?.pricingLastUpdated,
     loading,
     error,

@@ -7,6 +7,23 @@ type ToolRecommendationsSectionProps = {
 };
 
 export function ToolRecommendationsSection({ tools }: ToolRecommendationsSectionProps) {
+  const badgeFor = (t: ToolRecommendation) => {
+    const rt = t.recommendationType ?? "keep_plan";
+    const styles: Record<string, string> = {
+      downgrade_plan: "border-cyan/40 bg-cyan/10 text-cyan",
+      reduce_seats: "border-amber-500/40 bg-amber-500/10 text-amber-200",
+      keep_plan: "border-white/15 bg-white/5 text-muted-foreground",
+      insufficient_data: "border-destructive/40 bg-destructive/10 text-destructive",
+    };
+    const labels: Record<string, string> = {
+      downgrade_plan: "Downgrade",
+      reduce_seats: "Reduce seats",
+      keep_plan: "Keep plan",
+      insufficient_data: "Needs data",
+    };
+    return { label: labels[rt] ?? rt, className: styles[rt] ?? styles.keep_plan };
+  };
+
   return (
     <div className="mt-12">
       <h2 className="text-2xl md:text-3xl font-bold">Tool-by-tool recommendations</h2>
@@ -36,8 +53,20 @@ export function ToolRecommendationsSection({ tools }: ToolRecommendationsSection
                   <img src={logoUrl} alt="" className="w-full h-full object-contain" />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-semibold truncate">{tool.toolName}</div>
-                  <div className="text-sm text-muted-foreground mt-0.5 line-clamp-1">{tool.reason}</div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold truncate">{tool.toolName}</span>
+                    {(() => {
+                      const b = badgeFor(tool);
+                      return (
+                        <span
+                          className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${b.className}`}
+                        >
+                          {b.label}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-0.5 line-clamp-2">{tool.reason}</div>
                 </div>
               </div>
               <div className="flex items-center gap-3 text-sm">

@@ -6,12 +6,14 @@ interface ReviewStepProps {
   selected: SelectedTools;
   teamSize: number;
   useCase: string;
+  usageIntensity: "light" | "medium" | "heavy";
 }
 
 export function ReviewStep({
   selected,
   teamSize,
   useCase,
+  usageIntensity,
 }: ReviewStepProps) {
   const items = useMemo(
     () =>
@@ -60,7 +62,7 @@ export function ReviewStep({
           </div>
         ))}
       </div>
-      <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
+      <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
         <div className="glass rounded-xl p-4">
           <div className="text-xs text-muted-foreground">Team size</div>
           <div className="mt-1 font-semibold">{teamSize} people</div>
@@ -68,6 +70,10 @@ export function ReviewStep({
         <div className="glass rounded-xl p-4">
           <div className="text-xs text-muted-foreground">Use case</div>
           <div className="mt-1 font-semibold capitalize">{useCase}</div>
+        </div>
+        <div className="glass rounded-xl p-4 col-span-2 sm:col-span-1">
+          <div className="text-xs text-muted-foreground">Usage intensity</div>
+          <div className="mt-1 font-semibold capitalize">{usageIntensity}</div>
         </div>
       </div>
     </div>
