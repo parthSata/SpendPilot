@@ -1,5 +1,7 @@
 # Reflection (Round 1)
 
+Chronological build notes and follow-up work: **[DEVLOG.md](DEVLOG.md)** · Commits: **[github.com/parthSata/SpendPilot/commits/main](https://github.com/parthSata/SpendPilot/commits/main/)**
+
 ## 1. The hardest bug you hit this week, and how you debugged it
 
 The hardest bug cluster was **deployment + pricing math**, not UI polish. On Render, the backend crashed with `MongooseServerSelectionError: connect ECONNREFUSED 127.0.0.1:27017`, which also caused “no open ports” because the process exited before `listen()`. Hypothesis A: MongoDB URI missing in Render — partially true when `.env` was never mapped. Hypothesis B: URI still pointed at localhost — confirmed from topology (`127.0.0.1:27017`). Fix path: create Atlas, whitelist `0.0.0.0/0` for the MVP, set `MONGO_URI` on Render, redeploy, bind `0.0.0.0` in production.

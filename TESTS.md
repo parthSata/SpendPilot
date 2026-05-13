@@ -1,5 +1,7 @@
 # Tests
 
+Related: [CONTRIBUTING.md](CONTRIBUTING.md) · [ARCHITECTURE.md](ARCHITECTURE.md)
+
 All automated tests run from the **backend** package.
 
 ## How to run
@@ -17,7 +19,18 @@ npm run test
 
 Minimum **5** audit-engine scenarios are covered (the file contains **7** tests).
 
-## Lint
+## Frontend (manual / CI-friendly)
+
+Typecheck only (no Vitest in frontend by default):
+
+```bash
+cd frontend
+npx tsc --noEmit
+```
+
+Optional: `npm run lint` in `frontend/`.
+
+## Lint (backend)
 
 ```bash
 cd backend
