@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { getSharedAuditApi, type SharedAuditResponse } from "@/lib/audit-api";
+import type { SharedAuditResponse } from "@/lib/audit-api";
+import { fetchAuditForDisplay } from "@/lib/report-loader";
 
 export type PublicReportTool = {
   toolName: string;
@@ -13,8 +14,10 @@ export function usePublicReportPage(shareId?: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const trimmed = shareId?.trim() ?? "";
+
   useEffect(() => {
-    if (!shareId) {
+    if (!trimmed) {
       setError("Missing report id. Run audit first.");
       setLoading(false);
       return;
@@ -25,9 +28,9 @@ export function usePublicReportPage(shareId?: string) {
       try {
         setLoading(true);
         setError("");
-        const response = await getSharedAuditApi(shareId);
+        const { data } = await fetchAuditForDisplay(trimmed);
         if (mounted) {
-          setReport(response.data);
+          setReport(data);
         }
       } catch (err) {
         if (mounted) {
@@ -44,7 +47,7 @@ export function usePublicReportPage(shareId?: string) {
     return () => {
       mounted = false;
     };
-  }, [shareId]);
+  }, [trimmed]);
 
   const monthlySavings = report?.totalMonthlySavings ?? 0;
   const annualSavings = report?.totalAnnualSavings ?? 0;

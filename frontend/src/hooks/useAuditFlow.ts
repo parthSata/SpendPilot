@@ -1,48 +1,62 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { PRICING_DATA, getPrice, calculateBreakdowns, ToolSelection, getRecommendations, getTotalSavings } from "@/lib/pricing/pricing";
+import {
+  PRICING_DATA,
+  calculateBreakdowns,
+  ToolSelection,
+  getRecommendations,
+  getTotalSavings,
+} from "@/lib/pricing/pricing";
 import { runAuditApi } from "@/lib/audit-api";
+import { saveAuditReport } from "@/lib/audit-local-storage";
 
 export interface ToolSelectionState {
   plan: string;
   seats: number;
+  /** When set, total monthly spend for this tool (assignment: declared actual spend). */
+  monthlySpendActual: number | null;
 }
 
 export type SelectedTools = Record<string, ToolSelectionState>;
 
 export const AUDIT_STEPS = ["Tools", "Team", "Use case", "Review"] as const;
 
+/** Primary use case labels aligned with the assignment brief. */
 export const USE_CASES = [
-  { id: "engineering", title: "Engineering", desc: "Code generation, reviews, debugging" },
-  { id: "product", title: "Product & design", desc: "Specs, research, prototyping" },
-  { id: "api", title: "API / production", desc: "LLM-powered features in your app" },
-  { id: "ops", title: "Ops & marketing", desc: "Content, support, automation" },
+  { id: "coding", title: "Coding", desc: "Code generation, reviews, debugging, CI" },
+  { id: "writing", title: "Writing", desc: "Docs, marketing, internal comms" },
+  { id: "data", title: "Data", desc: "Analysis, SQL, spreadsheets, dashboards" },
+  { id: "research", title: "Research", desc: "Deep dives, synthesis, competitive intel" },
+  { id: "mixed", title: "Mixed", desc: "Several of the above at similar weight" },
 ] as const;
 
 export function useAuditFlow() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [selected, setSelected] = useState<SelectedTools>({
-    chatgpt: { plan: "plus", seats: 5 },
-    cursor: { plan: "pro", seats: 5 },
+    chatgpt: { plan: "plus", seats: 5, monthlySpendActual: null },
+    cursor: { plan: "pro", seats: 5, monthlySpendActual: null },
   });
   const [teamSize, setTeamSize] = useState(10);
-  const [useCase, setUseCase] = useState("engineering");
+  const [useCase, setUseCase] = useState("coding");
   const [usageIntensity, setUsageIntensity] = useState<"light" | "medium" | "heavy">("medium");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  /** Honeypot — must remain empty for the audit request to succeed. */
+  const [websiteHoneypot, setWebsiteHoneypot] = useState("");
 
   const breakdowns = useMemo(() => {
     const selections: ToolSelection[] = Object.entries(selected).map(([toolKey, state]) => ({
       toolKey,
       plan: state.plan,
       seats: state.seats,
+      monthlySpendActual: state.monthlySpendActual,
     }));
     return calculateBreakdowns(selections, teamSize);
   }, [selected, teamSize]);
 
   const total = useMemo(() => breakdowns.reduce((sum, b) => sum + b.totalMonthly, 0), [breakdowns]);
-  
+
   const estSavings = useMemo(() => {
     const recommendations = getRecommendations(breakdowns, { teamSize, usageIntensity });
     return getTotalSavings(recommendations);
@@ -65,20 +79,18 @@ export function useAuditFlow() {
         seats: b.seats,
       }));
 
-      const mappedUseCase =
-        useCase === "engineering"
-          ? "coding"
-          : useCase === "product"
-            ? "writing"
-            : useCase === "api"
-              ? "data"
-              : "mixed";
-
       const response = await runAuditApi({
         teamSize,
-        primaryUseCase: mappedUseCase,
+        primaryUseCase: useCase as "coding" | "writing" | "research" | "data" | "mixed",
         usageIntensity,
         tools: toolsPayload,
+        website: websiteHoneypot,
+      });
+
+      saveAuditReport({
+        ...response.data,
+        views: 0,
+        createdAt: new Date().toISOString(),
       });
 
       void navigate({
@@ -108,10 +120,12 @@ export function useAuditFlow() {
     estSavings,
     steps: AUDIT_STEPS,
     useCases: USE_CASES,
+    websiteHoneypot,
     setSelected,
     setTeamSize,
     setUseCase,
     setUsageIntensity,
+    setWebsiteHoneypot,
     next,
     prev,
     isSubmitting,

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/site/Navbar";
 import { AuroraBackground } from "@/components/site/Background";
 import { useAuditFlow } from "@/hooks/useAuditFlow";
-import { formatPrice } from "@/lib/pricing/pricing";
+import { formatPrice, formatSavingsUsd } from "@/lib/pricing/pricing";
 
 // Separated Step Components
 import { ToolsStep } from "./components/ToolsStep";
@@ -24,10 +24,12 @@ export function AuditPage() {
     estSavings,
     steps,
     useCases,
+    websiteHoneypot,
     setSelected,
     setTeamSize,
     setUseCase,
     setUsageIntensity,
+    setWebsiteHoneypot,
     next,
     prev,
     isSubmitting,
@@ -59,8 +61,9 @@ export function AuditPage() {
                   {i < steps.length - 1 && (
                     <div className="flex-1 h-px bg-white/10 relative overflow-hidden">
                       <motion.div
-                        initial={{ width: 0 }}
+                        initial={false}
                         animate={{ width: i < step ? "100%" : "0%" }}
+                        transition={{ type: "tween", duration: 0.2, ease: "easeOut" }}
                         className="absolute inset-y-0 left-0 bg-linear-to-r from-electric to-violet"
                       />
                     </div>
@@ -69,13 +72,13 @@ export function AuditPage() {
               ))}
             </div>
 
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="sync">
               <motion.div
                 key={step}
-                initial={{ opacity: 0, x: 30 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -30 }}
-                transition={{ duration: 0.3 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.12, ease: "easeOut" }}
               >
                 {step === 0 && <ToolsStep selected={selected} setSelected={setSelected} />}
                 {step === 1 && <TeamStep teamSize={teamSize} setTeamSize={setTeamSize} />}
@@ -89,7 +92,14 @@ export function AuditPage() {
                   />
                 )}
                 {step === 3 && (
-                  <ReviewStep selected={selected} teamSize={teamSize} useCase={useCase} usageIntensity={usageIntensity} />
+                  <ReviewStep
+                    selected={selected}
+                    teamSize={teamSize}
+                    useCase={useCase}
+                    usageIntensity={usageIntensity}
+                    websiteHoneypot={websiteHoneypot}
+                    setWebsiteHoneypot={setWebsiteHoneypot}
+                  />
                 )}
               </motion.div>
             </AnimatePresence>
@@ -115,11 +125,11 @@ export function AuditPage() {
                 <TrendingDown className="h-4 w-4 shrink-0" />
                 <div className="min-w-0">
                   <div className="text-xs uppercase tracking-wider truncate">Potential savings</div>
-                  <div className="text-2xl font-bold truncate">{formatPrice(estSavings)}/mo</div>
+                  <div className="text-2xl font-bold truncate">{formatSavingsUsd(estSavings)}/mo</div>
                 </div>
               </div>
               <div className="mt-4 text-xs text-muted-foreground truncate">
-                That's <span className="text-foreground font-semibold">{formatPrice(estSavings * 12)}</span> per year.
+                That's <span className="text-foreground font-semibold">{formatSavingsUsd(estSavings * 12)}</span> per year.
               </div>
             </div>
 

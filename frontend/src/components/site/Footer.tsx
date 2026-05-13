@@ -1,7 +1,11 @@
 import { Link } from "@tanstack/react-router";
 import { Sparkles, Github, Twitter, Linkedin } from "lucide-react";
+import { useDefaultResultsShareId } from "@/hooks/useDefaultResultsShareId";
 
 export function Footer() {
+  const { shareId: resultsShareId, isSample } = useDefaultResultsShareId();
+  const resultsLinkLabel = isSample ? "Sample results" : "Your last results";
+
   return (
     <footer className="relative mt-32 border-t border-white/5">
       <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-(--violet)/40 to-transparent" />
@@ -30,7 +34,7 @@ export function Footer() {
           <h4 className="text-sm font-semibold mb-4">Product</h4>
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li><Link to="/audit" className="hover:text-foreground transition">Run audit</Link></li>
-            <li><Link to="/results" className="hover:text-foreground transition">Sample results</Link></li>
+            <li><Link to="/results" search={{ shareId: resultsShareId }} className="hover:text-foreground transition">{resultsLinkLabel}</Link></li>
           </ul>
         </div>
         <div>

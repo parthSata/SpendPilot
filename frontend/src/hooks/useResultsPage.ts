@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { getSharedAuditApi, sendAuditEmailApi, type SharedAuditResponse } from "@/lib/audit-api";
+import { sendAuditEmailApi, type SharedAuditResponse } from "@/lib/audit-api";
+import { fetchAuditForDisplay } from "@/lib/report-loader";
 
 export type SpendTrendPoint = {
   m: string;
@@ -9,6 +10,7 @@ export type SpendTrendPoint = {
 
 export type ToolRecommendation = {
   toolName: string;
+  currentPlan: string;
   current: number;
   recommended: number;
   monthlySpend: number;
@@ -31,9 +33,12 @@ export function useResultsPage(shareId?: string) {
   const [error, setError] = useState("");
   const [audit, setAudit] = useState<SharedAuditResponse | null>(null);
 
+  const trimmedShareId = shareId?.trim() ?? "";
+
   useEffect(() => {
-    if (!shareId) {
-      setError("Missing report id. Run audit first.");
+    if (!trimmedShareId) {
+      setAudit(null);
+      setError("");
       setLoading(false);
       return;
     }
@@ -43,9 +48,9 @@ export function useResultsPage(shareId?: string) {
       try {
         setLoading(true);
         setError("");
-        const response = await getSharedAuditApi(shareId);
+        const { data } = await fetchAuditForDisplay(trimmedShareId);
         if (mounted) {
-          setAudit(response.data);
+          setAudit(data);
         }
       } catch (err) {
         if (mounted) {
@@ -62,7 +67,7 @@ export function useResultsPage(shareId?: string) {
     return () => {
       mounted = false;
     };
-  }, [shareId]);
+  }, [trimmedShareId]);
 
   const monthly = audit?.totalMonthlySavings ?? 0;
   const yearly = audit?.totalAnnualSavings ?? 0;
@@ -73,6 +78,7 @@ export function useResultsPage(shareId?: string) {
     () =>
       (audit?.tools ?? []).map((tool) => ({
         toolName: tool.toolName,
+        currentPlan: tool.currentPlan,
         current: tool.monthlySpend,
         recommended: Math.max(0, tool.monthlySpend - tool.monthlySavings),
         monthlySpend: tool.monthlySpend,
@@ -107,7 +113,7 @@ export function useResultsPage(shareId?: string) {
   }, [monthly, totalSpend]);
 
   const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:8080";
-  const shareUrl = shareId ? `${origin}/report/${encodeURIComponent(shareId)}` : "";
+  const shareUrl = trimmedShareId ? `${origin}/report/${encodeURIComponent(trimmedShareId)}` : "";
 
   const handleCopy = async () => {
     if (!shareUrl) return;
@@ -147,7 +153,7 @@ export function useResultsPage(shareId?: string) {
     trend,
     tools,
     shareUrl,
-    shareId: shareId || "",
+    shareId: trimmedShareId,
     aiSummary: audit?.aiSummary || "",
     usageIntensity: audit?.usageIntensity ?? "medium",
     pricingLastUpdated: audit?.pricingLastUpdated,

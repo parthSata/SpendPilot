@@ -80,6 +80,8 @@ export const runAuditApi = (payload: {
   primaryUseCase: "coding" | "writing" | "research" | "data" | "mixed";
   usageIntensity?: "light" | "medium" | "heavy";
   tools: AuditToolPayload[];
+  /** Honeypot — must stay empty (bots often fill hidden website fields). */
+  website?: string;
   lead?: { email: string; companyName?: string; role?: string };
 }) =>
   request<RunAuditResponse>("/audit/run", {

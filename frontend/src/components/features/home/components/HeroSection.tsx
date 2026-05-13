@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { FloatingTool } from "@/hooks/useLandingPage";
+import { useDefaultResultsShareId } from "@/hooks/useDefaultResultsShareId";
 
 type HeroSectionProps = {
   tools: FloatingTool[];
@@ -21,9 +22,14 @@ function faviconDomainForTool(tool: FloatingTool): string {
 }
 
 export function HeroSection({ tools, toolPositions }: HeroSectionProps) {
+  const { shareId: resultsShareId, isSample } = useDefaultResultsShareId();
+
+  const resultsCtaLabel = isSample ? "See sample report" : "See your last report";
+
   return (
     <section className="relative pt-36 pb-24 px-6">
-      <div className="mx-auto max-w-6xl text-center">
+      <div className="mx-auto max-w-6xl text-center relative">
+        <div className="relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -65,7 +71,9 @@ export function HeroSection({ tools, toolPositions }: HeroSectionProps) {
             </Link>
           </Button>
           <Button asChild variant="glass" size="xl">
-            <Link to="/results" search={{ shareId: "sample" }}>See sample report</Link>
+            <Link to="/results" search={{ shareId: resultsShareId }}>
+              {resultsCtaLabel}
+            </Link>
           </Button>
         </motion.div>
         <motion.div
@@ -78,16 +86,29 @@ export function HeroSection({ tools, toolPositions }: HeroSectionProps) {
           <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-success" /> No credit card</span>
           <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-success" /> SOC 2 ready</span>
         </motion.div>
+        </div>
 
-        <div className="pointer-events-none absolute inset-0 hidden md:block">
+        <div className="pointer-events-none absolute inset-0 hidden md:block overflow-hidden z-0">
           {tools.map((t, i) => (
             <motion.div
               key={t.id}
               initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.6 + i * 0.08, duration: 0.6 }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+                y: [0, -14, 0],
+              }}
+              transition={{
+                opacity: { delay: 0.55 + i * 0.07, duration: 0.55 },
+                scale: { delay: 0.55 + i * 0.07, duration: 0.55 },
+                y: {
+                  delay: 1.1 + i * 0.12,
+                  duration: 3.8 + i * 0.35,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                },
+              }}
               className={`absolute ${toolPositions[i]}`}
-              style={{ animationDelay: `${i * 0.4}s` }}
             >
               <div className="h-12 w-12 rounded-xl glass-strong grid place-items-center p-2 shadow-card">
                 <img

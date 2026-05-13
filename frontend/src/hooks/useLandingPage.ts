@@ -18,18 +18,19 @@ export function useLandingPage() {
   const tools = Object.entries(PRICING_DATA).slice(0, 8).map(([key, t]) => ({
     id: key,
     label: t.label,
-    emoji: t.emoji,
-    color: t.color
+    emoji: t.emoji ?? "🤖",
+    color: t.color,
   }));
   const toolPositions = [
     "top-10 left-2 md:left-10",
     "top-24 right-2 md:right-12",
     "top-56 left-4 md:left-24",
     "top-72 right-6 md:right-32",
-    "top-40 left-1/2 -translate-x-1/2",
+    /* Was centered near top — overlapped the “New · …” pill (Gemini is 5th tool). Keep off-center, lower. */
+    "top-[17rem] right-2 md:right-6 lg:top-[18rem]",
     "top-96 left-12 md:left-40",
     "top-[26rem] right-12 md:right-40",
-    "top-20 left-1/3",
+    "top-28 left-[8%] md:left-[12%]",
   ];
 
   const stats = [

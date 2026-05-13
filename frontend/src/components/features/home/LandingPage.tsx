@@ -9,6 +9,7 @@ import { HowItWorksSection } from "@/components/features/home/components/HowItWo
 import { SavingsExamplesSection } from "@/components/features/home/components/SavingsExamplesSection";
 import { FaqSection } from "@/components/features/home/components/FaqSection";
 import { CtaSection } from "@/components/features/home/components/CtaSection";
+import { SavedReportsSection } from "@/components/features/home/components/SavedReportsSection";
 
 export function LandingPage() {
   const {
@@ -28,6 +29,7 @@ export function LandingPage() {
       <Navbar />
       <HeroSection tools={tools} toolPositions={toolPositions} />
       <TrustBarSection stats={stats} />
+      <SavedReportsSection />
       <DashboardPreviewSection />
       <HowItWorksSection flowSteps={flowSteps} />
       <SavingsExamplesSection savingsExamples={savingsExamples} />

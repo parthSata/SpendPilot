@@ -17,19 +17,26 @@ const toolInputSchema = z.object({
   seats: z.coerce.number().int().positive().default(1),
 });
 
-const runAuditSchema = z.object({
-  teamSize: z.coerce.number().int().positive(),
-  primaryUseCase: z.enum(["coding", "writing", "research", "data", "mixed"]),
-  usageIntensity: z.enum(["light", "medium", "heavy"]).default("medium"),
-  tools: z.array(toolInputSchema).min(1),
-  lead: z
-    .object({
-      email: z.string().email(),
-      companyName: z.string().optional(),
-      role: z.string().optional(),
-    })
-    .optional(),
-});
+const runAuditSchema = z
+  .object({
+    teamSize: z.coerce.number().int().positive(),
+    primaryUseCase: z.enum(["coding", "writing", "research", "data", "mixed"]),
+    usageIntensity: z.enum(["light", "medium", "heavy"]).default("medium"),
+    tools: z.array(toolInputSchema).min(1),
+    /** Honeypot — leave empty; reject if filled (simple bot / scraper friction). */
+    website: z.string().optional(),
+    lead: z
+      .object({
+        email: z.string().email(),
+        companyName: z.string().optional(),
+        role: z.string().optional(),
+      })
+      .optional(),
+  })
+  .refine((d) => (d.website ?? "").length === 0, {
+    message: "Invalid request",
+    path: ["website"],
+  });
 
 const sendAuditEmailSchema = z.object({
   auditId: z.string().min(1),
@@ -42,7 +49,8 @@ export const runAuditController = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid audit payload", parsed.error.issues);
   }
 
-  const data = await runAudit(parsed.data);
+  const { website: _hp, ...auditPayload } = parsed.data;
+  const data = await runAudit(auditPayload);
   return res.status(201).json(new ApiResponse(201, data, "Audit generated successfully"));
 });
 

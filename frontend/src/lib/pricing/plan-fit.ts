@@ -27,11 +27,15 @@ export const PLAN_FIT: Record<string, Record<string, { maxIntensity?: UsageInten
     pro: { maxIntensity: "heavy" },
     max: { maxIntensity: "heavy" },
     team: { maxIntensity: "heavy" },
+    enterprise: { maxIntensity: "heavy" },
+    api_direct: { maxIntensity: "heavy" },
   },
   chatgpt: {
     free: { maxIntensity: "light" },
     plus: { maxIntensity: "heavy" },
     team: { maxIntensity: "heavy" },
+    enterprise: { maxIntensity: "heavy" },
+    api_direct: { maxIntensity: "heavy" },
   },
   anthropic_api: {
     build: { maxIntensity: "heavy" },
@@ -46,6 +50,8 @@ export const PLAN_FIT: Record<string, Record<string, { maxIntensity?: UsageInten
     free: { maxIntensity: "light" },
     advanced: { maxIntensity: "heavy" },
     business: { maxIntensity: "heavy" },
+    ultra: { maxIntensity: "heavy" },
+    api: { maxIntensity: "heavy" },
   },
   windsurf: {
     free: { maxIntensity: "light" },

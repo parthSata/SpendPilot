@@ -18,14 +18,17 @@ export const globalPlanFallbacks = {
   scale: 150,
   starter: 50,
   growth: 200,
+  ultra: 35,
+  api: 120,
+  api_direct: 200,
 };
 
 export const toolPricing = {
   cursor: { hobby: 0, pro: 20, business: 40 },
-  chatgpt: { free: 0, plus: 20, team: 30 },
-  claude: { free: 0, pro: 20, max: 100, team: 30 },
+  chatgpt: { free: 0, plus: 20, team: 30, enterprise: 60, api_direct: 200 },
+  claude: { free: 0, pro: 20, max: 100, team: 30, enterprise: 70, api_direct: 180 },
   github_copilot: { free: 0, individual: 10, business: 19, enterprise: 39 },
-  gemini: { free: 0, advanced: 20, business: 24 },
+  gemini: { free: 0, advanced: 20, business: 24, ultra: 35, api: 120 },
   openai_api: { starter: 50, growth: 200, scale: 500 },
   anthropic_api: { build: 30, scale: 150 },
   windsurf: { free: 0, pro: 15, team: 30 },

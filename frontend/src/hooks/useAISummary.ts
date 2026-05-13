@@ -1,5 +1,4 @@
 import { useCallback, useState } from "react";
-import type { Recommendation } from "../lib/pricing/pricing";
 
 const GROQ_CHAT_URL = "https://api.groq.com/openai/v1/chat/completions";
 
@@ -10,6 +9,19 @@ type GroqChatResponse = {
   choices?: Array<{ message?: { content?: string } }>;
   error?: { message?: string };
 };
+
+export type SummaryRecommendationInput = {
+  toolKey: string;
+  toolName?: string;
+  currentPlan: string;
+  suggestedPlan: string;
+  monthlySavings: number;
+  recommendationType?: string;
+};
+
+function displayToolName(r: SummaryRecommendationInput) {
+  return r.toolName ?? r.toolKey;
+}
 
 export default function useAISummary() {
   const [summary, setSummary] = useState<string | null>(null);
@@ -25,7 +37,7 @@ export default function useAISummary() {
     }: {
       totalSpend: number;
       totalSavings: number;
-      recommendations: Recommendation[];
+      recommendations: SummaryRecommendationInput[];
     }) => {
       setIsLoading(true);
       setError(null);
@@ -35,17 +47,32 @@ export default function useAISummary() {
       const applyFallback = () => {
         if (totalSavings === 0) {
           setSummary(
-            `Your AI tool stack costs $${totalSpend}/month. Current plan selections are well optimized with no immediate downgrades recommended. Continue monitoring usage patterns as your team scales.`
+            `Your AI tool stack costs $${totalSpend}/month. Plan and seat selections look efficient with no large automated downgrades — continue validating usage as you scale.`
           );
         } else {
-          const topRec = recommendations[0];
-          const topRecSentence = topRec
-            ? `Downgrading ${topRec.toolKey} to ${topRec.suggestedPlan} is highly recommended.`
-            : "";
+          const sorted = [...recommendations]
+            .filter((r) => r.monthlySavings > 0)
+            .sort((a, b) => b.monthlySavings - a.monthlySavings);
+          const topRec = sorted[0];
           const percent = totalSpend > 0 ? Math.round((totalSavings / totalSpend) * 100) : 0;
 
+          let topRecSentence = "";
+          if (topRec) {
+            const nm = displayToolName(topRec);
+            const samePlan =
+              String(topRec.suggestedPlan).toLowerCase() === String(topRec.currentPlan).toLowerCase();
+
+            if (topRec.recommendationType === "reduce_seats" && topRec.monthlySavings > 0) {
+              topRecSentence = `Biggest win: reclaim spend on ${nm} by tightening seats while keeping ${topRec.currentPlan} (~$${topRec.monthlySavings}/mo).`;
+            } else if (topRec.recommendationType === "keep_plan" || samePlan) {
+              topRecSentence = `${nm} is best kept on ${topRec.currentPlan} at your usage level; savings come from other levers in the table below.`;
+            } else {
+              topRecSentence = `Largest near-term lever: align ${nm} from ${topRec.currentPlan} toward ${topRec.suggestedPlan} (~$${topRec.monthlySavings}/mo if usage supports it).`;
+            }
+          }
+
           setSummary(
-            `Your team spends $${totalSpend}/month on AI tools. Analysis identified $${totalSavings}/month in potential savings (${percent}% reduction) by optimizing plan tiers. ${topRecSentence} Implementing these changes would save $${totalSavings * 12} annually.`
+            `Your team spends about $${totalSpend}/month on AI tools. The audit flags roughly $${totalSavings}/month in optimizations (${percent}% of spend). ${topRecSentence} Annualized, that is on the order of $${totalSavings * 12}.`
           );
         }
         setIsFallback(true);
@@ -61,9 +88,9 @@ export default function useAISummary() {
           recommendations
             .map(
               (r) =>
-                `Switch ${r.toolKey} from ${r.currentPlan} to ${r.suggestedPlan}: save $${r.monthlySavings}/mo`
+                `${displayToolName(r)}: ${r.currentPlan} → ${r.suggestedPlan} (${r.recommendationType ?? "n/a"}), save $${r.monthlySavings}/mo`
             )
-            .join(", ") || "None";
+            .join("; ") || "None";
 
         const userPrompt = `You are an AI infrastructure cost consultant.
 Write a professional audit summary in exactly 3 short paragraphs (~100 words total).
@@ -71,10 +98,10 @@ Write a professional audit summary in exactly 3 short paragraphs (~100 words tot
 Data:
 - Current monthly AI tool spend: $${totalSpend}
 - Potential monthly savings identified: $${totalSavings}
-- Top recommendations: ${recsText}
+- Per-tool signals (plan labels must match this list; do not contradict a "keep" with a "downgrade" for the same tool): ${recsText}
 
 Paragraph 1: Summarize current spend.
-Paragraph 2: Describe the optimization opportunities.
+Paragraph 2: Describe the optimization opportunities (respect keep_plan vs downgrade_plan).
 Paragraph 3: Expected outcome if changes are made.
 
 Rules: Prose only. No bullet points. No headers. Professional tone. Under 120 words total.`;

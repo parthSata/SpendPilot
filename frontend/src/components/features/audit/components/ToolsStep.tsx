@@ -14,7 +14,7 @@ export function ToolsStep({ selected, setSelected }: ToolsStepProps) {
     if (copy[toolKey] !== undefined) {
       delete copy[toolKey];
     } else {
-      copy[toolKey] = { plan: defaultPlan, seats: 5 };
+      copy[toolKey] = { plan: defaultPlan, seats: 5, monthlySpendActual: null };
     }
     setSelected(copy);
   };
@@ -33,6 +33,28 @@ export function ToolsStep({ selected, setSelected }: ToolsStepProps) {
     });
   };
 
+  const updateMonthlySpend = (toolKey: string, raw: string) => {
+    const trimmed = raw.trim();
+    if (trimmed === "") {
+      setSelected({
+        ...selected,
+        [toolKey]: { ...selected[toolKey], monthlySpendActual: null },
+      });
+      return;
+    }
+    const n = Number.parseFloat(trimmed);
+    if (Number.isNaN(n) || n < 0) return;
+    setSelected({
+      ...selected,
+      [toolKey]: { ...selected[toolKey], monthlySpendActual: n },
+    });
+  };
+
+  const formatPlanLabel = (planKey: string) =>
+    planKey
+      .replace(/_/g, " ")
+      .replace(/\bapi\b/i, "API")
+      .replace(/\bdirect\b/i, "direct");
   return (
     <div>
       <h2 className="text-2xl md:text-3xl font-bold">Which AI tools is your team using?</h2>
@@ -43,10 +65,10 @@ export function ToolsStep({ selected, setSelected }: ToolsStepProps) {
           return (
             <motion.button
               key={toolKey}
-              layout
               whileTap={{ scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 520, damping: 32 }}
               onClick={() => toggle(toolKey, Object.keys(t.plans)[0] || "free")}
-              className={`relative text-left p-4 rounded-xl border transition-all duration-300 flex flex-col min-h-[72px] ${
+              className={`relative text-left p-4 rounded-xl border transition-colors duration-150 flex flex-col min-h-[72px] ${
                 active ? "border-(--electric)/60 bg-(--electric)/10 shadow-lg" : "border-white/10 bg-white/5 hover:bg-white/10"
               }`}
             >
@@ -71,8 +93,9 @@ export function ToolsStep({ selected, setSelected }: ToolsStepProps) {
               </div>
               {active && (
                 <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.12, ease: "easeOut" }}
                   className="mt-3 space-y-2"
                 >
                   <div className="flex items-center gap-2">
@@ -81,11 +104,16 @@ export function ToolsStep({ selected, setSelected }: ToolsStepProps) {
                       value={selected[toolKey].plan}
                       onClick={(e) => e.stopPropagation()}
                       onChange={(e) => updatePlan(toolKey, e.target.value)}
-                      className="flex-1 h-8 bg-white/5 border border-white/10 rounded-md text-sm px-2 outline-none focus:border-(--electric)"
+                      className="flex-1 h-8 bg-white/5 border border-white/10 rounded-md text-sm px-2 outline-none focus:border-electric"
                     >
                       {Object.entries(t.plans).map(([planName, cost]) => (
                         <option key={planName} value={planName} className="text-black bg-white">
-                          {planName} {typeof cost === "number" && cost > 0 ? `($${cost}/mo)` : ""}
+                          {formatPlanLabel(planName)}{" "}
+                          {typeof cost === "number" && cost > 0
+                            ? `($${cost}/mo est.)`
+                            : typeof cost === "string" && cost === "custom"
+                              ? "(custom)"
+                              : ""}
                         </option>
                       ))}
                     </select>
@@ -99,8 +127,26 @@ export function ToolsStep({ selected, setSelected }: ToolsStepProps) {
                       value={selected[toolKey].seats}
                       onClick={(e) => e.stopPropagation()}
                       onChange={(e) => updateSeats(toolKey, parseInt(e.target.value) || 1)}
-                      className="flex-1 h-8 bg-white/5 border border-white/10 rounded-md text-sm px-2 outline-none focus:border-(--electric)"
+                      className="flex-1 h-8 bg-white/5 border border-white/10 rounded-md text-sm px-2 outline-none focus:border-electric"
                     />
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-xs text-muted-foreground w-10 shrink-0 pt-1.5">Spend:</span>
+                    <div className="flex-1 min-w-0">
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        placeholder="Auto from plan × seats"
+                        value={selected[toolKey].monthlySpendActual ?? ""}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => updateMonthlySpend(toolKey, e.target.value)}
+                        className="w-full h-8 bg-white/5 border border-white/10 rounded-md text-sm px-2 outline-none focus:border-electric"
+                      />
+                      <p className="mt-0.5 text-[10px] text-muted-foreground leading-tight">
+                        Current monthly spend for this tool (leave blank to estimate from plan × seats).
+                      </p>
+                    </div>
                   </div>
                 </motion.div>
               )}

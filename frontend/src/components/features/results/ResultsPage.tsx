@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/site/Navbar";
 import { AuroraBackground } from "@/components/site/Background";
@@ -11,6 +11,8 @@ import { ResultsChartsSection } from "@/components/features/results/components/R
 import { ToolRecommendationsSection } from "@/components/features/results/components/ToolRecommendationsSection";
 import { ResultsCtaSection } from "@/components/features/results/components/ResultsCtaSection";
 import useAISummary from "@/hooks/useAISummary";
+import { getLatestStoredShareId } from "@/lib/audit-local-storage";
+import { SAMPLE_SHARE_ID } from "@/lib/sample-audit";
 
 type ResultsPageProps = {
   shareId?: string;
@@ -43,6 +45,11 @@ export function ResultsPage({ shareId }: ResultsPageProps) {
 
   const { summary: clientSummary, isLoading: summaryLoading, error: summaryError, generateSummary } = useAISummary();
 
+  const [latestLocalShareId, setLatestLocalShareId] = useState<string | null>(null);
+  useEffect(() => {
+    setLatestLocalShareId(getLatestStoredShareId());
+  }, [resolvedShareId]);
+
   useEffect(() => {
     if (!tools?.length || clientSummary || summaryLoading || summaryError) {
       return undefined;
@@ -51,10 +58,12 @@ export function ResultsPage({ shareId }: ResultsPageProps) {
     const totalSpend = tools.reduce((sum, t) => sum + t.monthlySpend, 0);
     const totalSavings = tools.reduce((sum, t) => sum + t.monthlySavings, 0);
     const recommendations = tools.map((t) => ({
+      toolName: t.toolName,
       toolKey: t.toolName,
-      currentPlan: "Current Plan",
+      currentPlan: t.currentPlan,
       suggestedPlan: t.recommendedPlan,
       monthlySavings: t.monthlySavings,
+      recommendationType: t.recommendationType ?? "keep_plan",
     }));
 
     const id = window.setTimeout(() => {
@@ -86,15 +95,25 @@ export function ResultsPage({ shareId }: ResultsPageProps) {
                 <div className="h-16 w-16 bg-destructive/10 rounded-full grid place-items-center mx-auto mb-6">
                   <span className="text-3xl">⚠️</span>
                 </div>
-                <h2 className="text-2xl font-bold mb-3">{error.includes("Missing") ? "No Report Found" : "Audit Error"}</h2>
-                <p className="text-muted-foreground mb-8">
-                  {error.includes("Missing")
-                    ? "We couldn't find an audit report associated with this link. You might need to run a new audit first."
-                    : error}
-                </p>
-                <Button variant="hero" asChild>
-                  <Link to="/audit">Run New Audit</Link>
-                </Button>
+                <h2 className="text-2xl font-bold mb-3">Audit Error</h2>
+                <p className="text-muted-foreground mb-8">{error}</p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Button variant="hero" asChild>
+                    <Link to="/audit">Run New Audit</Link>
+                  </Button>
+                  <Button variant="glass" asChild>
+                    <Link to="/results" search={{ shareId: SAMPLE_SHARE_ID }}>
+                      Open sample report
+                    </Link>
+                  </Button>
+                  {latestLocalShareId ? (
+                    <Button variant="outline" asChild className="border-white/20 bg-white/5">
+                      <Link to="/results" search={{ shareId: latestLocalShareId }}>
+                        Try saved copy
+                      </Link>
+                    </Button>
+                  ) : null}
+                </div>
               </div>
             </div>
           ) : (

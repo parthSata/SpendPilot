@@ -27,8 +27,10 @@ export function Navbar() {
     >
       <div className="mx-auto max-w-7xl px-4">
         <div
-          className={`flex items-center justify-between rounded-2xl px-4 md:px-6 py-3 transition-all ${
-            scrolled ? "glass-strong shadow-card" : "glass"
+          className={`flex items-center justify-between rounded-2xl px-4 md:px-6 py-3 transition-all duration-300 border border-white/10 ${
+            scrolled
+              ? "bg-background/50 backdrop-blur-3xl shadow-[0_12px_48px_rgba(0,0,0,0.4)] border-white/15"
+              : "bg-background/35 backdrop-blur-2xl border-white/10"
           }`}
         >
           <Link to="/" className="flex items-center gap-2 group">

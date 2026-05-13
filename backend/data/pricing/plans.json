@@ -17,20 +17,24 @@
     }
   },
   "claude": {
-    "orderedPlans": ["Free", "Pro", "Max", "Team"],
+    "orderedPlans": ["Free", "Pro", "Max", "Team", "Enterprise", "API_direct"],
     "planFit": {
       "free": { "maxIntensity": "light" },
       "pro": { "maxIntensity": "heavy" },
       "max": { "maxIntensity": "heavy" },
-      "team": { "maxIntensity": "heavy" }
+      "team": { "maxIntensity": "heavy" },
+      "enterprise": { "maxIntensity": "heavy" },
+      "api_direct": { "maxIntensity": "heavy" }
     }
   },
   "chatgpt": {
-    "orderedPlans": ["Free", "Plus", "Team"],
+    "orderedPlans": ["Free", "Plus", "Team", "Enterprise", "API_direct"],
     "planFit": {
       "free": { "maxIntensity": "light" },
       "plus": { "maxIntensity": "heavy" },
-      "team": { "maxIntensity": "heavy" }
+      "team": { "maxIntensity": "heavy" },
+      "enterprise": { "maxIntensity": "heavy" },
+      "api_direct": { "maxIntensity": "heavy" }
     }
   },
   "anthropic_api": {
@@ -49,11 +53,13 @@
     }
   },
   "gemini": {
-    "orderedPlans": ["Free", "Advanced", "Business"],
+    "orderedPlans": ["Free", "Advanced", "Business", "Ultra", "API"],
     "planFit": {
       "free": { "maxIntensity": "light" },
       "advanced": { "maxIntensity": "heavy" },
-      "business": { "maxIntensity": "heavy" }
+      "business": { "maxIntensity": "heavy" },
+      "ultra": { "maxIntensity": "heavy" },
+      "api": { "maxIntensity": "heavy" }
     }
   },
   "windsurf": {
